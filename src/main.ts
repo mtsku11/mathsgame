@@ -276,5 +276,14 @@ function frame(now: number): void {
   requestAnimationFrame(frame);
 }
 render();
-registerOffline((status, update) => { offlineStatus = status; applyUpdate = update; if (screen === 'setup' || screen === 'results') render(); else { const label = document.getElementById('offline-status'); if (label) label.textContent = status; } });
+registerOffline((status, update) => {
+  offlineStatus = status;
+  applyUpdate = update;
+  const label = document.getElementById('offline-status');
+  if (label) label.textContent = status;
+  const updateBar = app.querySelector('.update-bar');
+  const showUpdate = Boolean(applyUpdate) && (screen === 'setup' || screen === 'results');
+  if (showUpdate && !updateBar) app.insertAdjacentHTML('beforeend', '<div class="update-bar"><button data-action="update">Update game now</button></div>');
+  if (!showUpdate) updateBar?.remove();
+});
 requestAnimationFrame(frame);
