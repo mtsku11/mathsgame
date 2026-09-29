@@ -1,6 +1,6 @@
 # Number Crew build backlog
 
-Status: Phase 1 playable-slice software gate verified on 28 September 2026 using the implemented three/four-pupil layouts. Typecheck, 15 unit tests, production build, and 17 Chromium browser scenarios and one production offline/update scenario pass (29 September 2026). Phase 2 full-mission software is implemented and verified; classroom-access and delivery gates remain open. Phase 0 remains pending physical XAC verification. Unchecked items require implementation or further acceptance evidence; they do not necessarily mean the code is absent.
+Status: Phase 1 playable-slice and Phase 2 full-mission software gates are verified. The public GitHub Pages build is live; its deployment passed 15 unit tests and all 18 hosted Chromium scenarios, including an offline reload and complete mission, on 29 September 2026. Classroom access acceptance and physical XAC verification remain open. Unchecked items require implementation or further acceptance evidence; they do not necessarily mean the code is absent.
 
 ## Confirm classroom facts
 
@@ -66,7 +66,7 @@ Use PLAN.md's provisional defaults for independent software work while the remai
 - [ ] Obtain a read-only review of the final diff and resolve material findings.
 - [ ] Deliver source, lockfile, dist artifact, teacher guide, and clear remaining limitations.
 - [x] Authorise GitHub Pages at `https://mtsku11.github.io/mathsgame/` in public `mtsku11/mathsgame` (29 September 2026).
-- [ ] Publish and verify the hosted browser suite and offline mission.
+- [x] Publish and verify the hosted browser suite and offline mission (18/18 at `https://mtsku11.github.io/mathsgame/`, 29 September 2026).
 
 ## Deferred
 
