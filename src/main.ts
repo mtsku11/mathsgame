@@ -4,7 +4,7 @@ import { seededRandom, type Preset, type Side } from './game/questions';
 import { createSession, answer, advance, pass, ready, type Session } from './game/session';
 import { InputFilter, type Pair } from './input/normalize';
 import { Calibration, ConnectionHistory, describeDevice, readDevices, down, type Binding, type Device } from './input/gamepad';
-import { marker, markers, rocket, dots, planet } from './ui/art';
+import { cargoPod, marker, markers, missionPart, rocket, dots, planet } from './ui/art';
 import { TransitionTimer } from './game/transition';
 import { registerOffline } from './offline/register';
 
@@ -55,6 +55,24 @@ function sound(): void {
   oscillator.start(); oscillator.stop(audio.currentTime + 0.26);
   oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
 }
+function animateCargo(player: number): void {
+  if (settings.reduced || settings.simple || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const source = app.querySelector(`.station-${player} .station-heading`);
+  const target = app.querySelector(`.cargo-bay .cargo-${player}`);
+  if (!source || !target) return;
+  const from = source.getBoundingClientRect();
+  const to = target.getBoundingClientRect();
+  const shell = document.createElement('div');
+  shell.innerHTML = cargoPod(player);
+  const pod = shell.firstElementChild as SVGElement;
+  pod.classList.add('cargo-flight');
+  pod.style.left = `${from.left + from.width / 2 - 20}px`;
+  pod.style.top = `${from.top + from.height / 2 - 14}px`;
+  pod.style.setProperty('--cargo-x', `${to.left + to.width / 2 - from.left - from.width / 2}px`);
+  pod.style.setProperty('--cargo-y', `${to.top + to.height / 2 - from.top - from.height / 2}px`);
+  document.body.append(pod);
+  pod.addEventListener('animationend', () => pod.remove(), { once: true });
+}
 function enableAudio(): void {
   if (!settings.quiet) { audio ??= new AudioContext(); void audio.resume().catch(() => { notice = 'Sound is unavailable. All feedback is also shown on screen.'; }); }
 }
@@ -83,7 +101,9 @@ function journey(): string {
   const round = session?.round ?? 1;
   const names = ['Amber Moon', 'Coral World', 'Quiet Blue'];
   const current = Math.floor((round - 1) / 2);
-  return `<section class="journey" aria-label="Journey progress"><div class="journey-title"><p class="eyebrow">${screen === 'practice' ? 'GETTING READY' : `DESTINATION ${current + 1} OF 3`}</p><h1>${screen === 'practice' ? 'Try your two switches' : names[current]}</h1><p>${screen === 'practice' ? 'Press each one. Watch its card light up.' : `Round ${round} of 6 · Take all the time you need`}</p></div><div class="route" aria-hidden="true">${names.map((_name, i) => `<div class="route-stop ${i === current ? 'current' : ''}">${planet(i)}<span>${i + 1}</span></div>`).join('')}${rocket()}</div><div class="star-total"><span aria-hidden="true">✦</span><strong>${session?.stars ?? 0}</strong><small>crew stars</small></div></section>`;
+  const completedRounds = session?.history.length ?? 0;
+  const cargo = session?.turns.map((turn, i) => turn.outcome === 'correct' ? cargoPod(i) : '').join('') ?? '';
+  return `<section class="journey" aria-label="Journey progress"><div class="journey-title"><p class="eyebrow">${screen === 'practice' ? 'GETTING READY' : `DESTINATION ${current + 1} OF 3`}</p><h1>${screen === 'practice' ? 'Try your two switches' : names[current]}</h1><p>${screen === 'practice' ? 'Press each one. Watch its card light up.' : `Round ${round} of 6 · Take all the time you need`}</p></div><div class="route" style="--journey-offset:${Math.min(completedRounds, 5) * 43}px" aria-hidden="true">${names.map((_name, i) => { const visited = completedRounds >= (i + 1) * 2; return `<div class="route-stop ${i === current ? 'current' : ''} ${visited ? 'visited' : ''}">${planet(i, visited)}<span>${visited ? 'DISCOVERED' : i + 1}</span></div>`; }).join('')}${rocket()}<div class="cargo-bay">${cargo}</div><div class="mission-parts">${Array.from({ length: 6 }, (_, i) => missionPart(i, i < completedRounds)).join('')}</div></div><div class="star-total"><span aria-hidden="true">✦</span><strong>${session?.stars ?? 0}</strong><small>crew stars</small></div></section>`;
 }
 function station(i: number, practice: boolean): string {
   const turn = practice ? null : session!.turns[i];
@@ -107,7 +127,7 @@ function pauseOverlay(): string {
   return `<div class="modal-backdrop"><section class="pause-dialog" role="dialog" aria-modal="true" aria-labelledby="pause-title" tabindex="-1"><p class="eyebrow">TAKE A BREATHER</p><h1 id="pause-title">Journey paused</h1><p>${escape(pauseReason || 'Your crew’s progress is safe. Take all the time you need.')}</p><p class="muted">Release all switches before continuing.</p><div class="button-stack">${recovering ? '<button class="primary" data-action="reconnect">Reconnect &amp; check switches</button>' : '<button class="primary" data-action="resume">Resume journey</button>'}<button data-action="sound">${settings.quiet ? 'Enable gentle sound' : 'Turn sound off'}</button>${volumeControl()}<button data-action="finish">End journey &amp; return to setup</button></div></section></div>`;
 }
 function results(): string {
-  return `<main class="results page"><p class="eyebrow">MISSION COMPLETE</p><h1>A whole crew.<br>A brilliant journey.</h1><div class="result-planets">${[0, 1, 2].map(i => planet(i)).join('')}${rocket()}</div><p class="result-stars">✦ ${session!.stars} crew stars collected</p><p>You counted. You explored. You got there together.</p><div class="button-row"><button class="primary" data-action="replay">Another adventure →</button><button data-action="setup">Teacher setup</button></div><details class="summary"><summary>Teacher observation · this session only</summary><p>Two choices include a chance element. This is observation, not an attainment score.</p><table><thead><tr><th>Station</th><th>First try</th><th>Retry</th><th>Supported</th><th>Passed</th></tr></thead><tbody>${presets().map((_, i) => { const turns = session!.history.map(round => round[i]); return `<tr><th>Player ${i + 1}</th><td>${turns.filter(t => t.outcome === 'correct' && t.attempts === 1 && !t.supported).length}</td><td>${turns.filter(t => t.outcome === 'correct' && t.attempts > 1 && !t.supported).length}</td><td>${turns.filter(t => t.outcome === 'correct' && t.supported).length}</td><td>${turns.filter(t => t.outcome === 'passed').length}</td></tr>`; }).join('')}</tbody></table><p>Results disappear when you start again. No pupil data is saved.</p></details></main>`;
+  return `<main class="results page"><p class="eyebrow">MISSION COMPLETE</p><h1>A whole crew.<br>A brilliant journey.</h1><div class="result-planets">${[0, 1, 2].map(i => planet(i, true)).join('')}${rocket()}</div><div class="mission-parts result-assembly">${Array.from({ length: 6 }, (_, i) => missionPart(i, true)).join('')}</div><p class="result-stars">✦ ${session!.stars} crew stars collected</p><p>You counted. You explored. You got there together.</p><div class="button-row"><button class="primary" data-action="replay">Another adventure →</button><button data-action="setup">Teacher setup</button></div><details class="summary"><summary>Teacher observation · this session only</summary><p>Two choices include a chance element. This is observation, not an attainment score.</p><table><thead><tr><th>Station</th><th>First try</th><th>Retry</th><th>Supported</th><th>Passed</th></tr></thead><tbody>${presets().map((_, i) => { const turns = session!.history.map(round => round[i]); return `<tr><th>Player ${i + 1}</th><td>${turns.filter(t => t.outcome === 'correct' && t.attempts === 1 && !t.supported).length}</td><td>${turns.filter(t => t.outcome === 'correct' && t.attempts > 1 && !t.supported).length}</td><td>${turns.filter(t => t.outcome === 'correct' && t.supported).length}</td><td>${turns.filter(t => t.outcome === 'passed').length}</td></tr>`; }).join('')}</tbody></table><p>Results disappear when you start again. No pupil data is saved.</p></details></main>`;
 }
 function render(): void {
   const focused = document.activeElement as HTMLElement | null;
@@ -252,6 +272,7 @@ function frame(now: number): void {
   const actions = filter.sample(states, now);
   pulses = emptyPairs();
   let changed = false;
+  const cargoPlayers: number[] = [];
   if (screen === 'practice' && !document.hidden && document.hasFocus()) {
     for (const { pupil, side } of actions) {
       if (pupil >= settings.count) continue;
@@ -265,14 +286,14 @@ function frame(now: number): void {
   } else if (screen === 'play' && !paused && session) {
     for (const { pupil, side } of actions) {
       if (pupil >= settings.count || (settings.enlarged && pupil !== session.active) || session.turns[pupil].outcome !== 'waiting') continue;
-      if (answer(session, pupil, side)) sound();
+      if (answer(session, pupil, side)) { sound(); cargoPlayers.push(pupil); }
       else flashes[pupil] = 'Let’s count together. You can try again.';
       changed = true;
     }
   }
   const completed = !!session && !session.finished && ready(session);
   if (transition.sample(now, settings.autoAdvance && completed, screen === 'play' && !paused && !document.hidden, settings.transitionSeconds * 1000)) perform('next');
-  if (changed) render();
+  if (changed) { render(); cargoPlayers.forEach(animateCargo); }
   requestAnimationFrame(frame);
 }
 render();

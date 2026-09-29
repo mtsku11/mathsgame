@@ -176,9 +176,12 @@ position:relative;
 border-radius:50%;
 background:#dab476;
 box-shadow:inset -12px -8px 0 #00000012;
-flex-shrink:0}
-.planet i{
+flex-shrink:0;
+isolation:isolate}
+.planet i,.planet b{
 position:absolute;
+z-index:1}
+.planet i{
 width:22%;
 height:22%;
 background:#00000012;
@@ -186,17 +189,69 @@ border-radius:50%;
 top:20%;
 left:24%}
 .planet b{
-position:absolute;
 width:30%;
 height:30%;
 background:#ffffff2a;
 border-radius:50%;
 bottom:18%;
 right:20%}
+.planet-0:after{
+content:'';
+position:absolute;
+width:122%;
+height:30%;
+left:-11%;
+top:34%;
+border:5px solid #9e794e;
+border-left-color:transparent;
+border-right-color:transparent;
+border-radius:50%;
+transform:rotate(-14deg)}
 .planet-1{
-background:#d2937c}
+background:#d2937c;
+border-radius:42% 58% 47% 53%/57% 43% 57% 43%;
+transform:rotate(4deg)}
 .planet-2{
-background:#86b6bd}
+background:#86b6bd;
+border-radius:58% 42% 55% 45%/45% 55% 43% 57%}
+.planet-2:after{
+content:'';
+position:absolute;
+width:18%;
+height:18%;
+right:-25%;
+top:3%;
+border-radius:50%;
+background:#b6d3d4;
+box-shadow:0 0 0 2px #5b858b}
+.planet-reveal{
+position:absolute;
+z-index:2;
+left:50%;
+bottom:12%;
+opacity:0;
+transform:translate(-50%,5px);
+transition:opacity .3s,transform .3s}
+.planet.revealed .planet-reveal{
+opacity:1;
+transform:translate(-50%,0)}
+.reveal-0{
+width:25%;
+height:36%;
+background:#fff2bd;
+clip-path:polygon(50% 0,100% 35%,78% 100%,22% 100%,0 35%)}
+.reveal-1{
+width:9%;
+height:35%;
+background:#7b3f39;
+border-radius:5px 5px 0 0;
+box-shadow:-8px 7px 0 -2px #7b3f39,8px 4px 0 -2px #7b3f39}
+.reveal-2{
+width:34%;
+height:22%;
+border:4px solid #f3fbf8;
+border-bottom:0;
+border-radius:18px 18px 0 0}
 .hero-art>.planet-0{
 position:absolute;
 width:95px;
@@ -461,6 +516,7 @@ align-items:center;
 gap:40px;
 position:relative;
 min-width:255px;
+min-height:78px;
 justify-content:center}
 .route:before{
 content:'';
@@ -477,6 +533,13 @@ position:relative;
 opacity:.6}
 .route-stop.current{
 opacity:1}
+.route-stop.visited{
+opacity:1}
+.route-stop.visited>span{
+font-size:7px;
+font-weight:700;
+letter-spacing:.7px;
+color:var(--teal)}
 .route .planet{
 width:42px;
 height:42px}
@@ -488,8 +551,64 @@ width:55px;
 height:65px;
 position:absolute;
 bottom:-15px;
-left:-38px;
-transform:rotate(36deg)}
+left:calc(-38px + var(--journey-offset));
+transform:rotate(36deg);
+transition:left .55s ease}
+.cargo-bay{
+position:absolute;
+display:flex;
+align-items:center;
+gap:1px;
+height:14px;
+top:52px;
+left:calc(-15px + var(--journey-offset));
+z-index:2}
+.cargo-pod{
+width:20px;
+height:14px;
+display:block}
+.cargo-0{color:#286c65}
+.cargo-1{color:#934a31}
+.cargo-2{color:#536396}
+.cargo-3{color:#80537c}
+.cargo-flight{
+position:fixed;
+width:40px;
+height:28px;
+z-index:50;
+pointer-events:none;
+animation:cargo-flight .65s cubic-bezier(.2,.7,.2,1) both}
+@keyframes cargo-flight{
+0%{transform:translate(0,0) scale(1);opacity:1}
+75%{opacity:1}
+100%{transform:translate(var(--cargo-x),var(--cargo-y)) scale(.55);opacity:0}}
+.mission-parts{
+display:flex;
+align-items:center;
+justify-content:center;
+gap:4px;
+position:absolute;
+top:70px;
+left:50%;
+transform:translateX(-50%)}
+.mission-part{
+width:16px;
+height:11px;
+border:1px solid #91a29e;
+border-radius:3px;
+background:#f6f3eb;
+position:relative}
+.mission-part i{
+position:absolute;
+width:1px;
+height:100%;
+left:50%;
+background:#91a29e}
+.mission-part.complete{
+background:#d9a458;
+border-color:#8b672e}
+.mission-part.complete:nth-child(even){
+background:#71a6a1}
 .star-total{
 display:grid;
 grid-template-columns:auto auto;
@@ -781,6 +900,10 @@ width:150px;
 transform:rotate(15deg)}
 .result-planets>.planet-1{
 margin-top:80px}
+.result-assembly{
+position:static;
+transform:none;
+margin:-12px auto 18px}
 .result-stars{
 font-size:26px;
 font-weight:700;
@@ -809,13 +932,15 @@ border-bottom:1px solid var(--line)}
 .update-bar{
 text-align:center;
 padding:12px}
-.simple .hero-art,.simple .route,.simple .empty-station .rocket,.simple .result-planets{
+.simple .hero-art,.simple .route,.simple .empty-station .rocket,.simple .result-planets,.simple .result-assembly{
 visibility:hidden}
 .reduce-motion *{
 scroll-behavior:auto}
 button{
 transition:background-color .15s,border-color .15s}
 .reduce-motion button{
+transition:none}
+.reduce-motion .planet-reveal,.reduce-motion .route>.rocket{
 transition:none}
 @media(prefers-reduced-motion:reduce){
 *{

@@ -46,6 +46,33 @@ test('anonymous comfort and input preferences survive reload while a new session
   await expect(page.getByLabel('Player 1 left key')).toHaveValue('KeyZ');
 });
 
+test('reduced motion keeps cargo and destination progress visible without travel', async ({ page }) => {
+  await page.goto('./');
+  await page.getByLabel('Crew size').selectOption('4');
+  await page.getByText('Comfort & access settings', { exact: true }).click();
+  await page.getByLabel('Reduce motion').check();
+  await page.getByLabel('Keyboard & on-screen buttons').check();
+  await page.getByRole('button', { name: 'Enter practice' }).click();
+  await page.getByRole('button', { name: 'Launch the journey' }).click();
+  await page.waitForTimeout(150);
+
+  const station = page.locator('.station').first();
+  const total = await station.locator('.question-area .dot').count();
+  const choices = await station.locator('.answer-value').allTextContents();
+  await station.locator('.answer').nth(choices.findIndex(value => Number(value) === total)).click();
+  await expect(page.locator('.cargo-bay .cargo-0')).toBeVisible();
+  await expect(page.locator('.cargo-flight')).toHaveCount(0);
+  expect(await page.locator('.route > .rocket').evaluate(element => getComputedStyle(element).transitionDuration)).toBe('0s');
+
+  for (let pupil = 2; pupil <= 4; pupil++) await page.getByRole('button', { name: `Pass player ${pupil}`, exact: true }).click();
+  await page.getByRole('button', { name: 'Next round' }).click();
+  for (let pupil = 1; pupil <= 4; pupil++) await page.getByRole('button', { name: `Pass player ${pupil}`, exact: true }).click();
+  await page.getByRole('button', { name: 'Next round' }).click();
+  await expect(page.locator('.route .planet.revealed')).toHaveCount(1);
+  await expect(page.locator('.planet.revealed .planet-reveal')).toBeVisible();
+  expect(await page.locator('.planet.revealed .planet-reveal').evaluate(element => getComputedStyle(element).transitionDuration)).toBe('0s');
+});
+
 test('quiet play stays silent and teacher can enable and disable local sound', async ({ page }) => {
   await page.addInitScript(() => {
     const original = AudioContext.prototype.createOscillator;

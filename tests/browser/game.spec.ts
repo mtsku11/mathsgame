@@ -20,6 +20,32 @@ test('four players complete six rounds with teacher support; no console errors',
   await expect(page.getByText('0 crew stars collected')).toBeVisible();
   await expect(page.getByText('A whole crew.')).toBeVisible(); expect(errors).toEqual([]);
 });
+test('cargo reaches the rocket and completed rounds build the expedition', async ({ page }) => {
+  await start(page);
+  const firstStation = page.locator('.station').first();
+  const total = await firstStation.locator('.question-area .dot').count();
+  const choices = await firstStation.locator('.answer-value').allTextContents();
+  await firstStation.locator('.answer').nth(choices.findIndex(value => Number(value) === total)).click();
+  await expect(page.locator('.cargo-bay .cargo-0')).toBeVisible();
+  await expect(page.locator('.cargo-flight')).toBeVisible();
+  for (let pupil = 2; pupil <= 4; pupil++) await page.getByRole('button', { name: `Pass player ${pupil}`, exact: true }).click();
+  await page.getByRole('button', { name: 'Next round' }).click();
+  await expect(page.locator('.mission-part.complete')).toHaveCount(1);
+  await expect(page.locator('.cargo-flight')).toHaveCount(0);
+
+  for (let round = 2; round <= 6; round++) {
+    for (let pupil = 1; pupil <= 4; pupil++) await page.getByRole('button', { name: `Pass player ${pupil}`, exact: true }).click();
+    await page.getByRole('button', { name: round === 6 ? 'Finish journey' : 'Next round' }).click();
+    if (round === 2) {
+      await expect(page.locator('.mission-part.complete')).toHaveCount(2);
+      await expect(page.locator('.route-stop.visited')).toHaveCount(1);
+      await expect(page.locator('.route .planet.revealed')).toHaveCount(1);
+    }
+    if (round === 4) await expect(page.locator('.route-stop.visited')).toHaveCount(2);
+  }
+  await expect(page.locator('.result-planets .planet.revealed')).toHaveCount(3);
+  await expect(page.locator('.result-assembly .mission-part.complete')).toHaveCount(6);
+});
 test('help does not answer, pause preserves question, blur pauses', async ({ page }) => {
   await start(page);
   const prompt = await page.locator('.station').first().innerText();

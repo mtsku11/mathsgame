@@ -51,7 +51,7 @@ Use PLAN.md's provisional defaults for independent software work while the remai
 - [x] Persist anonymous setup preferences; bindings remain session-only and new sessions require calibration.
 - [ ] Complete remaining access acceptance: actual browser 200% zoom, screen-reader announcements, visibility-change recovery, and unrelated-controller disconnect.
 - [x] Add separate effects-volume control in setup and pause; verify persistence, quiet/zero muting, gain scaling, and keyboard access.
-- [ ] Complete planned cargo/progress artwork and distinct destination reveals with static reduced-motion equivalents.
+- [x] Complete cargo flights, six-part round progress, and distinct destination reveals with static reduced-motion equivalents.
 - [x] Fit practice and mission at 1280×720 with 96px answer targets, picture answers, Help feedback, and teacher controls visible together.
 - [ ] Physically verify both three- and four-pupil play on the requested single shared XAC.
 - [ ] Check legibility and physical switch correspondence on the actual classroom display.
