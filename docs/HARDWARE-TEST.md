@@ -92,7 +92,7 @@ Typecheck/build, 15 unit tests, all 17 Chromium browser scenarios, and the produ
 
 ## GitHub Pages delivery — 29 September 2026
 
-The public build is live at `https://mtsku11.github.io/mathsgame/` from commit `74ee0ac`. GitHub Actions run `36604707855` passed the production build, 15 unit tests, and all 18 browser scenarios against the published HTTPS site. Hosted coverage includes the three/four-pupil flows, setup and access preferences, controller simulations, 720p layouts, service-worker scope, an offline reload, and a complete six-round mission for 24 stars. The hosted suite starts no local server.
+The public build is live at `https://mtsku11.github.io/mathsgame/` from commit `1f23a99`. GitHub Actions run `36610973440` passed the production build, 15 unit tests, and all 20 browser scenarios against the published HTTPS site. Hosted coverage includes the three/four-pupil flows, setup and access preferences, controller simulations, 720p layouts, cargo/progress artwork, reduced motion, service-worker scope, an offline reload, and a complete six-round mission for 24 stars. The hosted suite starts no local server.
 
 The first hosted run exposed and led to a fix for an asynchronous offline-status update that rebuilt and closed the teacher's setup panel. The successful rerun verifies the published fix. Controlled service-worker update replacement remains covered by the separate local production regression because a hosted test does not modify the deployed worker. Physical XAC, classroom Windows/Edge, school storage policy, speaker comfort, actual display readability, and the lesson-length rehearsal remain NOT TESTED.
 

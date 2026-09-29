@@ -1,6 +1,6 @@
 # Number Crew — implementation handoff
 
-Planning date: 28 September 2026. Implementation authorised on the same date. Status: Phase 1 playable-slice and Phase 2 full-mission software gates are verified using the implemented three/four-pupil layouts. The public GitHub Pages deployment and all 18 hosted Chromium scenarios pass, including an offline reload and complete mission; remaining access acceptance and physical hardware testing are incomplete. TODO.md and docs/HARDWARE-TEST.md record evidence and remaining checks.
+Planning date: 28 September 2026. Implementation authorised on the same date. Status: Phase 1 playable-slice and Phase 2 full-mission software gates are verified using the implemented three/four-pupil layouts. The public GitHub Pages deployment and all 20 hosted Chromium scenarios pass, including an offline reload, complete mission, cargo progress, and destination reveals; remaining access acceptance and physical hardware testing are incomplete. TODO.md and docs/HARDWARE-TEST.md record evidence and remaining checks.
 
 ## 1. Brief, recommendation, and open facts
 
