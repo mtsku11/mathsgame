@@ -1,7 +1,7 @@
 import type { Application } from 'pixi.js';
 import type { Quality } from '../../settings';
 import { isInstant, isLowStim } from './motion';
-import { STAGE_HEIGHT, STAGE_WIDTH, stageElement } from '../stage';
+import { STAGE_HEIGHT, STAGE_WIDTH, stageElement, stageScale } from '../stage';
 
 export type QualityLevel = Exclude<Quality, 'auto'>;
 export const qualityLevels: Record<QualityLevel, { resolution: number; antialias: boolean; particles: number }> = {
@@ -11,6 +11,8 @@ export const qualityLevels: Record<QualityLevel, { resolution: number; antialias
 };
 export const resolveQuality = (quality: Quality): QualityLevel => quality === 'auto' ? 'high' : quality;
 export const particleBudget = (quality: Quality): number => Math.round(qualityLevels[resolveQuality(quality)].particles * (isLowStim() ? 0.25 : 1));
+// Particle screens do not need a backing store denser than the screen shows: one canvas pixel per screen pixel, never above 1.5x (a 1080p window renders 1920x1080, not 2560x1440).
+export const particleResolution = (): number => Math.min(1.5, Math.max(1, stageScale() * (window.devicePixelRatio || 1)));
 export const fxEnabled = (): boolean => !isInstant() || new URLSearchParams(location.search).has('fx');
 
 let app: Application | null = null;
@@ -24,7 +26,7 @@ function unavailable(error: unknown): null {
   return null;
 }
 
-export function initFx(quality: Quality = 'auto'): Promise<Application | null> {
+export function initFx(quality: Quality = 'auto', options: { maxResolution?: number; antialias?: boolean } = {}): Promise<Application | null> {
   if (!fxEnabled()) return Promise.resolve(null);
   if (app) return Promise.resolve(app);
   if (pending) return pending;
@@ -40,8 +42,8 @@ export function initFx(quality: Quality = 'auto'): Promise<Application | null> {
       canvas.className = 'fx-canvas';
       canvas.dataset.quality = level;
       created = new Application();
-      await created.init({ canvas, width: STAGE_WIDTH, height: STAGE_HEIGHT, backgroundAlpha: 0, resolution: qualityLevels[level].resolution,
-        antialias: qualityLevels[level].antialias, autoDensity: true, autoStart: false, preference: ['webgl'] });
+      await created.init({ canvas, width: STAGE_WIDTH, height: STAGE_HEIGHT, backgroundAlpha: 0, resolution: Math.min(qualityLevels[level].resolution, options.maxResolution ?? Infinity),
+        antialias: options.antialias ?? qualityLevels[level].antialias, autoDensity: true, autoStart: false, preference: ['webgl'] });
       if (token !== generation || !parent.isConnected) { created.destroy({ removeView: true }); return null; }
       parent.append(canvas);
       created.render();

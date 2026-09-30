@@ -9,7 +9,7 @@ import { destinations, planetSvg } from '../art/planets';
 import { pipSvg, skyStars, starPath } from '../art/stars';
 import { idle, isCalm, timeline } from '../fx/motion';
 import { burst, confetti, crewColours, detachParticles, attachParticles, rain } from '../fx/particles';
-import { destroyFx, initFx, resolveQuality } from '../fx/pixi';
+import { destroyFx, initFx, particleResolution, resolveQuality } from '../fx/pixi';
 import { createStage, type Stage } from '../stage';
 
 export interface SummaryRow { player: number; first: number; retry: number; supported: number; passed: number }
@@ -104,7 +104,7 @@ ${pilots}
       apply(state);
       root.querySelector<HTMLElement>('.sp-fin-title')!.focus({ preventScroll: true });
       context = gsap.context(() => play(state));
-      void initFx(options.quality).then(app => app ? attachParticles(app, resolveQuality(options.quality)).then(() => { if (root) showers(); }) : undefined);
+      void initFx(options.quality, { maxResolution: particleResolution(), antialias: false }).then(app => app ? attachParticles(app, resolveQuality(options.quality)).then(() => { if (root) showers(); }) : undefined);
     },
     update(state) { if (root) apply(state); },
     unmount() {

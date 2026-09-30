@@ -57,6 +57,7 @@ export function createHub(options: { players: number; geo: Geo }): Hub {
   const planet = hub.querySelector<HTMLElement>('.sp-dest-planet')!;
   const name = hub.querySelector<HTMLElement>('.sp-dest-name')!;
   const ship = hub.querySelector<HTMLElement>('.sp-ship')!;
+  ship.setAttribute('aria-label', 'Crew stars: 0');
   const total = hub.querySelector<SVGTextElement>('.sp-core-num')!;
   const pips = [...hub.querySelectorAll<HTMLElement>('.sp-pip')];
   const round = hub.querySelector<HTMLElement>('.sp-round')!;

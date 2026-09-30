@@ -18,7 +18,11 @@ import { createTitleScreen } from './ui/screens/title';
 import { destinationOf } from './ui/art/planets';
 import { createFinaleScreen, type FinaleState } from './ui/screens/finale';
 import { createPlayScreen, type PlayState } from './ui/screens/play';
+import * as arrive from './ui/fx/arrive';
+import * as motion from './ui/fx/motion';
 import { setLowStim, setReducedMotion } from './ui/fx/motion';
+import * as particles from './ui/fx/particles';
+import * as pixi from './ui/fx/pixi';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 const announcer = document.createElement('p');
@@ -386,3 +390,5 @@ registerOffline((status, update) => {
   if (!showUpdate) updateBar?.remove();
 });
 requestAnimationFrame(frame);
+// Dev-server tests reach the running module instances here; the dev server can serve one module under two URLs, so importing them from the page is not reliable.
+if (import.meta.env.DEV) Object.assign(window, { __nc: { events, motion, particles, pixi, arrive } });

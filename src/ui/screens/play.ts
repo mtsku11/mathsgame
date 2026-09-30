@@ -13,7 +13,7 @@ import { createStation, type Station, type StationState } from '../components/st
 import { bindArrival } from '../fx/arrive';
 import { createMoments, type Moments } from '../fx/moments';
 import { attachParticles, detachParticles } from '../fx/particles';
-import { destroyFx, initFx, resolveQuality } from '../fx/pixi';
+import { destroyFx, initFx, particleResolution, resolveQuality } from '../fx/pixi';
 import { createStage, type Stage } from '../stage';
 
 export interface PlayState {
@@ -56,7 +56,7 @@ export function createPlayScreen(source: () => PlayState, options: { quality: Qu
       screen.update(initial);
       moments = createMoments({ layer, hub, banner, stations: () => stations, slotOf: player => players.indexOf(player) });
       bindArrival({ hub, hud });
-      void initFx(options.quality).then(app => { if (app) void attachParticles(app, resolveQuality(options.quality)); });
+      void initFx(options.quality, { maxResolution: particleResolution(), antialias: false }).then(app => { if (app) void attachParticles(app, resolveQuality(options.quality)); });
     },
     update(state) {
       if (!root) return;

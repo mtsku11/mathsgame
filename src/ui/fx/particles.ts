@@ -25,13 +25,18 @@ let attached: { app: Application; container: ParticleContainer; pool: Particle[]
 let atlas: Promise<HTMLCanvasElement> | null = null;
 let spawnedTotal = 0;
 
-const active = (): boolean => sim !== null && attached !== null && !isReduced() && !isInstant();
+// Every emitter call passes through here, so the cap always reflects the current quality and low-stimulation setting.
+function active(): boolean {
+  if (!sim || !attached || isReduced() || isInstant()) return false;
+  sim.cap = particleBudget(level);
+  return true;
+}
 const factor = (): number => isLowStim() ? 0.25 : 1;
 const scaled = (count: number): number => count <= 0 ? 0 : Math.max(1, Math.round(count * factor()));
 const pick = <T>(list: readonly T[]): T => list[Math.floor(random() * list.length)];
 
 export const particleStats = (): { ready: boolean; alive: number; cap: number; spawned: number; enabled: boolean } =>
-  ({ ready: attached !== null, alive: sim?.count ?? 0, cap: sim?.cap ?? 0, spawned: spawnedTotal, enabled: active() });
+  ({ ready: attached !== null, alive: sim?.count ?? 0, cap: attached ? particleBudget(level) : 0, spawned: spawnedTotal, enabled: active() });
 
 function spawn(spec: ParticleSpec): void { if (sim!.spawn(spec)) spawnedTotal++; }
 

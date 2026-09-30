@@ -69,14 +69,18 @@ export async function tapKey(page: Page, player: number, side: number, holdMs = 
   await page.evaluate(([value]) => { window.dispatchEvent(new KeyboardEvent('keyup', { code: value })); }, [code]);
 }
 
+// Runs `body` in the page with the running app's modules (dev server only): events, motion, particles, pixi, arrive.
+export interface NC { events: typeof import('../src/app/events'); motion: typeof import('../src/ui/fx/motion'); particles: typeof import('../src/ui/fx/particles'); pixi: typeof import('../src/ui/fx/pixi'); arrive: typeof import('../src/ui/fx/arrive') }
+export const nc = <T>(page: Page, body: (modules: NC) => T): Promise<T> => page.evaluate(`(${body.toString()})(window.__nc)`) as Promise<T>;
+
 export const momentEvents = ['answerCorrect', 'answerTry', 'turnHelped', 'turnPassed', 'roundReady', 'roundStart', 'destinationReached', 'missionComplete'] as const;
 // Records every moment event the game emits from now on; read them back with `recorded`.
 export async function recordEvents(page: Page): Promise<void> {
-  await page.evaluate(async names => {
-    const { events } = await import('/src/app/events.ts');
+  await page.evaluate(names => {
+    const { events } = (window as unknown as { __nc: { events: { on: (name: string, handler: (payload: unknown) => void) => void } } }).__nc;
     const log: { name: string; payload: unknown }[] = [];
     (window as unknown as { __events: typeof log }).__events = log;
-    for (const name of names) events.on(name as never, ((payload: unknown) => { log.push({ name, payload }); }) as never);
+    for (const name of names) events.on(name, payload => { log.push({ name, payload }); });
   }, [...momentEvents]);
 }
 export const recorded = (page: Page): Promise<{ name: string; payload: unknown }[]> => page.evaluate(() => (window as unknown as { __events: { name: string; payload: unknown }[] }).__events);
