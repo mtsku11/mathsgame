@@ -32,3 +32,26 @@ export function skyStars(seed: number): string {
   }
   return `<svg class="sp-sky" viewBox="0 0 1280 720" width="1280" height="720" aria-hidden="true">${s}</svg>`;
 }
+
+export function goldStar(): string {
+  return `<svg class="sp-star" viewBox="0 0 100 100" aria-hidden="true"><path d="${starPath(50, 54, 44, 19)}" fill="#FFD23F" stroke="#FFD23F" stroke-width="9" stroke-linejoin="round"/><path d="${starPath(50, 54, 26, 11)}" fill="#FFF0A8" opacity=".75"/></svg>`;
+}
+
+export const pipSvg = (): string => `<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="${starPath(12, 13, 11, 4.8)}" stroke-width="2.2" stroke-linejoin="round"/></svg>`;
+
+export function burstSvg(): string {
+  const points = [[0, -1], [.72, -.72], [1, 0], [.72, .72], [0, 1], [-.72, .72], [-1, 0], [-.72, -.72]];
+  return `<svg class="sp-burst" viewBox="-100 -100 200 200" aria-hidden="true">${points.map(([x, y], i) => `<path d="${starPath(x * 84, y * 84, 9, 3.6)}" fill="${i % 2 ? '#fff' : '#FFD23F'}"/>`).join('')}</svg>`;
+}
+
+// Small star cluster for picture answers: rows of at most five, each row centred.
+export function starCluster(count: number): string {
+  const cell = 26, columns = Math.min(count, 5), rows = Math.ceil(count / 5);
+  let paths = '';
+  for (let i = 0; i < count; i++) {
+    const row = Math.floor(i / 5), inRow = Math.min(5, count - row * 5);
+    const x = (columns - inRow) * cell / 2 + (i % 5) * cell + cell / 2;
+    paths += `<path d="${starPath(x, row * cell + cell / 2 + 1, 12, 5.2)}"/>`;
+  }
+  return `<svg class="sp-pic" viewBox="0 0 ${columns * cell} ${rows * cell + 2}" aria-hidden="true">${paths}</svg>`;
+}

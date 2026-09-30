@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { openSetup, enterSetup } from '../helpers';
+import { openSetup, enterSetup, answerCorrectly } from '../helpers';
 import { createServer, type Server } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { resolve, extname } from 'node:path';
@@ -44,11 +44,7 @@ test('production reloads offline, completes a mission, and defers updates until 
   await page.waitForTimeout(150);
   for (let round = 1; round <= 6; round++) {
     for (let pupil = 0; pupil < 4; pupil++) {
-      const station = page.locator('.station').nth(pupil);
-      const total = await station.locator('.question-area .dot').count();
-      const values = await station.locator('.answer-value').allTextContents();
-      await station.locator('.answer').nth(values.findIndex(value => Number(value) === total)).click();
-      await expect(station.locator('.station-footer > p')).toContainText('Cargo ready');
+      await answerCorrectly(page, pupil);
     }
     await page.getByRole('button', { name: round === 6 ? 'Finish journey' : 'Next round' }).click();
     if (round < 6) await page.waitForTimeout(550);
@@ -60,14 +56,15 @@ test('production reloads offline, completes a mission, and defers updates until 
   await page.waitForTimeout(150);
   updated = true;
   await page.evaluate(async () => { await (await navigator.serviceWorker.getRegistration())!.update(); });
-  await expect(page.locator('#offline-status')).toHaveText('Update ready between journeys');
+  await expect.poll(() => page.evaluate(async () => !!(await navigator.serviceWorker.getRegistration())!.waiting)).toBe(true);
   await expect(page.getByRole('button', { name: 'Update game now' })).toHaveCount(0);
-  expect(await page.evaluate(async () => !!(await navigator.serviceWorker.getRegistration())!.waiting)).toBe(true);
   for (let round = 1; round <= 6; round++) {
     for (let pupil = 1; pupil <= 4; pupil++) await page.getByRole('button', { name: `Pass player ${pupil}`, exact: true }).click();
     await page.getByRole('button', { name: round === 6 ? 'Finish journey' : 'Next round' }).click();
   }
+  await expect(page.locator('#offline-status')).toHaveText('Update ready between journeys');
   await page.getByRole('button', { name: 'Update game now' }).click();
+  await expect(page.getByRole('heading', { name: 'Number Crew', level: 1 })).toBeVisible();
   await enterSetup(page);
   await expect(page.locator('#offline-status')).toHaveText('Ready offline');
   expect(await page.evaluate(async () => (await navigator.serviceWorker.getRegistration())!.waiting === null)).toBe(true);

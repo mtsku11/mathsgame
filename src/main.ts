@@ -9,11 +9,12 @@ import { seededRandom, type Preset, type Side } from './game/questions';
 import { createSession, answer, advance, pass, ready, type Session } from './game/session';
 import { InputFilter, type Pair } from './input/normalize';
 import { Calibration, ConnectionHistory, describeDevice, readDevices, down, type Binding, type Device } from './input/gamepad';
-import { cargoPod, marker, markers, missionPart, rocket, dots, planet } from './ui/art';
+import { marker, markers, missionPart, rocket, planet } from './ui/art';
 import { TransitionTimer } from './game/transition';
 import { registerOffline } from './offline/register';
 import { createRouter, type Screen } from './app/router';
 import { createTitleScreen } from './ui/screens/title';
+import { createPlayScreen, type PlayState } from './ui/screens/play';
 import { setLowStim, setReducedMotion } from './ui/fx/motion';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
@@ -28,7 +29,8 @@ const settings = loadSettings();
 setReducedMotion(settings.reduced);
 setLowStim(settings.lowStim);
 let legacyActive = false;
-let screen: 'setup' | 'controls' | 'practice' | 'play' | 'results' = 'setup';
+type View = 'setup' | 'controls' | 'practice' | 'play' | 'results';
+let screen: View = 'setup';
 let mode: 'controller' | 'keyboard' = 'controller';
 let session: Session | null = null;
 let paused = false;
@@ -83,24 +85,6 @@ function sound(): void {
   oscillator.start(); oscillator.stop(audio.currentTime + 0.26);
   oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
 }
-function animateCargo(player: number): void {
-  if (settings.reduced || settings.simple || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const source = app.querySelector(`.station-${player} .station-heading`);
-  const target = app.querySelector(`.cargo-bay .cargo-${player}`);
-  if (!source || !target) return;
-  const from = source.getBoundingClientRect();
-  const to = target.getBoundingClientRect();
-  const shell = document.createElement('div');
-  shell.innerHTML = cargoPod(player);
-  const pod = shell.firstElementChild as SVGElement;
-  pod.classList.add('cargo-flight');
-  pod.style.left = `${from.left + from.width / 2 - 20}px`;
-  pod.style.top = `${from.top + from.height / 2 - 14}px`;
-  pod.style.setProperty('--cargo-x', `${to.left + to.width / 2 - from.left - from.width / 2}px`);
-  pod.style.setProperty('--cargo-y', `${to.top + to.height / 2 - from.top - from.height / 2}px`);
-  document.body.append(pod);
-  pod.addEventListener('animationend', () => pod.remove(), { once: true });
-}
 function enableAudio(): void {
   if (!settings.quiet) { audio ??= new AudioContext(); void audio.resume().catch(() => { notice = 'Sound is unavailable. All feedback is also shown on screen.'; }); }
 }
@@ -126,51 +110,47 @@ function controls(): string {
   <p id="calibration-status" class="calibration-status" role="status">${calibration ? escape(calibration.message) : complete ? 'All switches mapped. Check them together in practice.' : 'Select “Learn switch” for the first player’s left answer.'}</p><details open class="diagnostics"><summary>Live controller diagnostics</summary><pre id="diagnostic-text"></pre></details><div class="button-row"><button data-action="clear-bindings">Clear mappings</button><button class="primary" data-action="practice" ${complete ? '' : 'disabled'}>Check switches in practice →</button></div></main>`;
 }
 function journey(): string {
-  const round = session?.round ?? 1;
-  const names = ['Amber Moon', 'Coral World', 'Quiet Blue'];
-  const current = Math.floor((round - 1) / 2);
+  const current = Math.floor(((session?.round ?? 1) - 1) / 2);
   const completedRounds = session?.history.length ?? 0;
-  const cargo = session?.turns.map((turn, i) => turn.outcome === 'correct' ? cargoPod(i) : '').join('') ?? '';
-  return `<section class="journey" aria-label="Journey progress"><div class="journey-title"><p class="eyebrow">${screen === 'practice' ? 'GETTING READY' : `DESTINATION ${current + 1} OF 3`}</p><h1>${screen === 'practice' ? 'Try your two switches' : names[current]}</h1><p>${screen === 'practice' ? 'Press each one. Watch its card light up.' : `Round ${round} of 6 · Take all the time you need`}</p></div><div class="route" style="--journey-offset:${Math.min(completedRounds, 5) * 43}px" aria-hidden="true">${names.map((_name, i) => { const visited = completedRounds >= (i + 1) * 2; return `<div class="route-stop ${i === current ? 'current' : ''} ${visited ? 'visited' : ''}">${planet(i, visited)}<span>${visited ? 'DISCOVERED' : i + 1}</span></div>`; }).join('')}${rocket()}<div class="cargo-bay">${cargo}</div><div class="mission-parts">${Array.from({ length: 6 }, (_, i) => missionPart(i, i < completedRounds)).join('')}</div></div><div class="star-total"><span aria-hidden="true">✦</span><strong>${session?.stars ?? 0}</strong><small>crew stars</small></div></section>`;
+  return `<section class="journey" aria-label="Journey progress"><div class="journey-title"><p class="eyebrow">GETTING READY</p><h1>Try your two switches</h1><p>Press each one. Watch its card light up.</p></div><div class="route" style="--journey-offset:${Math.min(completedRounds, 5) * 43}px" aria-hidden="true">${[0, 1, 2].map(i => { const visited = completedRounds >= (i + 1) * 2; return `<div class="route-stop ${i === current ? 'current' : ''} ${visited ? 'visited' : ''}">${planet(i, visited)}<span>${visited ? 'DISCOVERED' : i + 1}</span></div>`; }).join('')}${rocket()}</div><div class="star-total"><span aria-hidden="true">✦</span><strong>${session?.stars ?? 0}</strong><small>crew stars</small></div></section>`;
 }
-function station(i: number, practice: boolean): string {
-  const turn = practice ? null : session!.turns[i];
-  const q = turn?.question;
-  const done = !!turn && turn.outcome !== 'waiting';
-  const feedback = practice ? flashes[i] || 'Your left switch. Your right switch.' : turn?.outcome === 'correct' ? 'Cargo ready. Thank you!' : turn?.outcome === 'passed' ? 'Travelling with the crew.' : flashes[i] || 'Choose your answer';
-  return `<section class="station station-${i} ${done ? 'resolved' : ''}" aria-labelledby="station-${i}-title"><div class="station-heading"><h2 id="station-${i}-title">${marker(i)} Player ${i + 1}<span>${markers[i]}</span></h2><span class="station-state">${done ? 'READY' : practice ? 'PRACTICE' : 'YOUR TURN'}</span></div>
-  <div class="question-area">${practice ? `<p class="prompt">Make a connection</p><p class="practice-symbol" aria-hidden="true">${marker(i)}</p>` : `<p class="prompt">${q!.kind === 'count' ? 'How many?' : `${q!.groups.join(' + ')} = ?`}</p><div class="groups">${q!.groups.map(value => dots(value)).join('<span class="plus" aria-hidden="true">+</span>')}</div>`}</div>
-  <div class="answers">${[0, 1].map(side => `<button class="answer ${practice && tested[i][side] ? 'tested' : ''}" data-answer-player="${i}" data-answer-side="${side}" ${done || paused ? 'disabled' : ''} aria-label="Player ${i + 1}, ${side ? 'right' : 'left'} answer${q ? `, ${q.choices[side]}` : ''}"><span class="answer-value">${practice ? side ? 'Right' : 'Left' : settings.players[i].quantities && q!.kind === 'add' ? dots(q!.choices[side]) : q!.choices[side]}</span><span class="answer-label">${side ? 'RIGHT' : 'LEFT'} <span>${mode === 'keyboard' ? settings.players[i].keys[side].slice(3) : 'SWITCH'}${practice && tested[i][side] ? ' · CHECKED' : ''}</span></span></button>`).join('')}</div>
-  <div class="station-footer"><p>${feedback}</p>${!practice ? `<div class="teacher-small"><button aria-label="Help player ${i + 1}" data-help="${i}" ${done || paused ? 'disabled' : ''}>Help</button><button aria-label="Pass player ${i + 1}" data-pass="${i}" ${done || paused ? 'disabled' : ''}>Pass</button></div>` : ''}</div>${turn?.supported && !done ? `<div class="scaffold">Count together: ${Array.from({ length: q!.groups.reduce((a, b) => a + b, 0) }, (_, n) => `<span>${n + 1}</span>`).join('')}</div>` : '<div class="scaffold-space" aria-hidden="true"></div>'}</section>`;
+function station(i: number): string {
+  return `<section class="station station-${i}" aria-labelledby="station-${i}-title"><div class="station-heading"><h2 id="station-${i}-title">${marker(i)} Player ${i + 1}<span>${markers[i]}</span></h2><span class="station-state">PRACTICE</span></div>
+  <div class="question-area"><p class="prompt">Make a connection</p><p class="practice-symbol" aria-hidden="true">${marker(i)}</p></div>
+  <div class="answers">${[0, 1].map(side => `<button class="answer ${tested[i][side] ? 'tested' : ''}" data-answer-player="${i}" data-answer-side="${side}" aria-label="Player ${i + 1}, ${side ? 'right' : 'left'} answer"><span class="answer-value">${side ? 'Right' : 'Left'}</span><span class="answer-label">${side ? 'RIGHT' : 'LEFT'} <span>${mode === 'keyboard' ? settings.players[i].keys[side].slice(3) : 'SWITCH'}${tested[i][side] ? ' · CHECKED' : ''}</span></span></button>`).join('')}</div>
+  <div class="station-footer"><p>${flashes[i] || 'Your left switch. Your right switch.'}</p></div></section>`;
 }
-function playScreen(): string {
-  const practice = screen === 'practice';
-  const shown = !practice && settings.enlarged ? [session!.active] : Array.from({ length: settings.count }, (_, i) => i);
+function practiceScreen(): string {
   const practiceReady = mode === 'keyboard' || tested.slice(0, settings.count).every(pair => pair.every(Boolean));
-  const nextReady = !practice && (settings.enlarged ? session!.turns[session!.active].outcome !== 'waiting' : ready(session!));
-  return `<main class="play-page">${journey()}<div class="stations ${!practice && settings.enlarged ? 'enlarged' : shown.length === 1 ? 'solo' : ''}">${shown.map(i => station(i, practice)).join('')}${shown.length === 3 ? `<div class="empty-station">${rocket()}<p>Every answer is a little adventure.</p></div>` : ''}</div>
-  <footer class="teacher-bar"><span class="eyebrow">TEACHER CONTROLS</span><div class="button-row">${practice ? `<button data-action="${mode === 'controller' ? 'controls' : 'setup'}">${mode === 'controller' ? 'Switch setup' : 'Back to setup'}</button><span class="practice-progress">${mode === 'controller' ? `${tested.slice(0, settings.count).flat().filter(Boolean).length} / ${settings.count * 2} switches checked` : 'Keyboard and on-screen buttons enabled'}</span><button class="primary" data-action="start" ${practiceReady ? '' : 'disabled'}>${recovering ? 'Resume journey' : 'Launch the journey'} →</button>` : `<button data-action="pause">Pause journey</button><span class="turn-note">${settings.enlarged ? `Player ${session!.active + 1} of ${settings.count}` : 'We travel together'}</span><button class="primary" data-action="next" ${nextReady ? '' : 'disabled'}>${settings.enlarged && session!.active < settings.count - 1 ? 'Next player' : session!.round === 6 ? 'Finish journey' : 'Next round'} →</button>`}</div></footer></main>${paused ? pauseOverlay() : ''}`;
+  return `<main class="play-page">${journey()}<div class="stations ${settings.count === 1 ? 'solo' : ''}">${Array.from({ length: settings.count }, (_, i) => station(i)).join('')}${settings.count === 3 ? `<div class="empty-station">${rocket()}<p>Every answer is a little adventure.</p></div>` : ''}</div>
+  <footer class="teacher-bar"><span class="eyebrow">TEACHER CONTROLS</span><div class="button-row"><button data-action="${mode === 'controller' ? 'controls' : 'setup'}">${mode === 'controller' ? 'Switch setup' : 'Back to setup'}</button><span class="practice-progress">${mode === 'controller' ? `${tested.slice(0, settings.count).flat().filter(Boolean).length} / ${settings.count * 2} switches checked` : 'Keyboard and on-screen buttons enabled'}</span><button class="primary" data-action="start" ${practiceReady ? '' : 'disabled'}>${recovering ? 'Resume journey' : 'Launch the journey'} →</button></div></footer></main>`;
 }
-function pauseOverlay(): string {
-  return `<div class="modal-backdrop"><section class="pause-dialog" role="dialog" aria-modal="true" aria-labelledby="pause-title" tabindex="-1"><p class="eyebrow">TAKE A BREATHER</p><h1 id="pause-title">Journey paused</h1><p>${escape(pauseReason || 'Your crew’s progress is safe. Take all the time you need.')}</p><p class="muted">Release all switches before continuing.</p><div class="button-stack">${recovering ? '<button class="primary" data-action="reconnect">Reconnect &amp; check switches</button>' : '<button class="primary" data-action="resume">Resume journey</button>'}<button data-action="sound">${settings.quiet ? 'Enable gentle sound' : 'Turn sound off'}</button>${volumeControl()}<button data-action="finish">End journey &amp; return to setup</button></div></section></div>`;
+function playState(): PlayState {
+  const current = session!;
+  const shown = settings.enlarged ? [current.active] : Array.from({ length: settings.count }, (_, i) => i);
+  const resolved = settings.enlarged ? current.turns[current.active].outcome !== 'waiting' : ready(current);
+  return {
+    players: shown.length, round: current.round, completed: current.history.length, stars: current.stars,
+    stations: shown.map(player => { const turn = current.turns[player]; return { player, question: turn.question, outcome: turn.outcome, attempts: turn.attempts, supported: turn.supported, picture: settings.players[player].quantities, paused }; }),
+    next: resolved ? settings.enlarged && current.active < settings.count - 1 ? 'Next player' : current.round === 6 ? 'Finish journey' : 'Next round' : null,
+    turn: settings.enlarged ? `Player ${current.active + 1} of ${settings.count}` : '',
+    pause: { paused, reason: pauseReason, recovering, quiet: settings.quiet, volume: settings.effectsVolume },
+  };
 }
 function results(): string {
   return `<main class="results page"><p class="eyebrow">MISSION COMPLETE</p><h1>A whole crew.<br>A brilliant journey.</h1><div class="result-planets">${[0, 1, 2].map(i => planet(i, true)).join('')}${rocket()}</div><div class="mission-parts result-assembly">${Array.from({ length: 6 }, (_, i) => missionPart(i, true)).join('')}</div><p class="result-stars">✦ ${session!.stars} crew stars collected</p><p>You counted. You explored. You got there together.</p><div class="button-row"><button class="primary" data-action="replay">Another adventure →</button><button data-action="setup">Teacher setup</button></div><details class="summary"><summary>Teacher observation · this session only</summary><p>Two choices include a chance element. This is observation, not an attainment score.</p><table><thead><tr><th>Station</th><th>First try</th><th>Retry</th><th>Supported</th><th>Passed</th></tr></thead><tbody>${presets().map((_, i) => { const turns = session!.history.map(round => round[i]); return `<tr><th>Player ${i + 1}</th><td>${turns.filter(t => t.outcome === 'correct' && t.attempts === 1 && !t.supported).length}</td><td>${turns.filter(t => t.outcome === 'correct' && t.attempts > 1 && !t.supported).length}</td><td>${turns.filter(t => t.outcome === 'correct' && t.supported).length}</td><td>${turns.filter(t => t.outcome === 'passed').length}</td></tr>`; }).join('')}</tbody></table><p>Results disappear when you start again. No pupil data is saved.</p></details></main>`;
 }
 function render(): void {
+  if (screen === 'play') { if (router.current() === 'play') play.update(playState()); return; }
   if (!legacyActive) return;
   const focused = document.activeElement as HTMLElement | null;
   const focusId = focused?.id;
   const focusData = focused?.dataset;
   document.body.classList.toggle('reduce-motion', settings.reduced);
   document.body.classList.toggle('simple', settings.simple);
-  app.innerHTML = header() + (screen === 'setup' ? setup() : screen === 'controls' ? controls() : screen === 'results' ? results() : playScreen()) +
+  app.innerHTML = header() + (screen === 'setup' ? setup() : screen === 'controls' ? controls() : screen === 'results' ? results() : practiceScreen()) +
     (applyUpdate && (screen === 'setup' || screen === 'results') ? '<div class="update-bar"><button data-action="update">Update game now</button></div>' : '');
-  if (paused && screen === 'play') {
-    app.querySelector<HTMLElement>('main')!.inert = true;
-    app.querySelector<HTMLElement>('header')!.inert = true;
-    app.querySelector<HTMLElement>('.pause-dialog button, .pause-dialog select')?.focus();
-  } else if (focusId) document.getElementById(focusId)?.focus();
+  if (focusId) document.getElementById(focusId)?.focus();
   else if (focusData?.action) app.querySelector<HTMLElement>(`[data-action="${focusData.action}"]`)?.focus();
   else if (focusData?.answerPlayer) app.querySelector<HTMLElement>(`[data-answer-player="${focusData.answerPlayer}"][data-answer-side="${focusData.answerSide}"]`)?.focus();
   if (screen === 'controls') updateDiagnostics();
@@ -185,37 +165,43 @@ function pause(reason = ''): void {
   if (screen !== 'play' || paused) return;
   paused = true; transition.suspend(); pauseReason = reason; resetInput(); render();
 }
+function enter(next: View): void {
+  screen = next;
+  const target = next === 'play' ? 'play' : 'legacy';
+  if (router.current() === target) render(); else router.go(target);
+}
 function preparePractice(): void {
-  screen = 'practice'; paused = false; tested = emptyPairs(); pendingTests = emptyPairs(); flashes = ['', '', '', '']; calibration = null; resetInput(); render();
+  paused = false; tested = emptyPairs(); pendingTests = emptyPairs(); flashes = ['', '', '', '']; calibration = null; resetInput(); enter('practice');
 }
 function newJourneySetup(): void {
   session = null; recovering = false; paused = false; bindings = emptyBindings(); transition.reset();
   filter = new InputFilter(settings.players.map(player => player.cooldown));
-  if (mode === 'controller') { screen = 'controls'; render(); } else preparePractice();
+  if (mode === 'controller') enter('controls'); else preparePractice();
 }
 function perform(action: string): void {
   switch (action) {
-    case 'home': if (screen === 'play') pause(); else if (!recovering) { screen = 'setup'; session = null; render(); } return;
+    case 'home': if (screen === 'play') pause(); else if (!recovering) { session = null; enter('setup'); } return;
     case 'prepare': notice = saveSettings(settings) ? '' : 'Preferences cannot be saved in this browser; this session will still work.'; enableAudio(); newJourneySetup(); return;
-    case 'setup': session = null; paused = false; recovering = false; screen = 'setup'; calibration = null; resetInput(); render(); return;
-    case 'controls': screen = 'controls'; calibration = null; render(); return;
+    case 'setup': session = null; paused = false; recovering = false; calibration = null; resetInput(); enter('setup'); return;
+    case 'controls': calibration = null; enter('controls'); return;
     case 'clear-bindings': bindings = emptyBindings(); calibration = null; calibrationTarget = null; render(); return;
     case 'practice': preparePractice(); return;
     case 'start':
       if (mode === 'controller' && !tested.slice(0, settings.count).every(pair => pair.every(Boolean))) return;
       if (!recovering) { random = seededRandom(Date.now()); session = createSession(presets(), random); }
-      screen = 'play'; paused = false; recovering = false; pauseReason = ''; flashes = ['', '', '', '']; resetInput(); render(); announce(missionAnnouncement()); return;
+      paused = false; recovering = false; pauseReason = ''; flashes = ['', '', '', '']; resetInput(); enter('play'); announce(missionAnnouncement()); return;
     case 'pause': pause(); return;
     case 'resume':
       paused = false; pauseReason = ''; resetInput(); render();
       app.querySelector<HTMLElement>('[data-action="pause"]')?.focus();
       announce(missionAnnouncement());
       return;
-    case 'pause-back': screen = 'play'; paused = true; render(); return;
-    case 'reconnect': bindings = emptyBindings(); calibration = null; screen = 'controls'; render(); return;
+    case 'pause-back': paused = true; enter('play'); return;
+    case 'reconnect': bindings = emptyBindings(); calibration = null; enter('controls'); return;
     case 'next':
       if (session && !paused && advance(session, presets(), random, settings.enlarged)) {
-        transition.reset(); flashes = ['', '', '', '']; resetInput(); if (session.finished) { screen = 'results'; sound(); } render();
+        transition.reset(); flashes = ['', '', '', '']; resetInput();
+        if (session.finished) { sound(); enter('results'); } else render();
         announce(session.finished ? `Mission complete. ${session.stars} crew stars collected.` : missionAnnouncement());
       } return;
     case 'replay': newJourneySetup(); return;
@@ -268,6 +254,13 @@ window.addEventListener('keydown', event => {
     else if (!event.shiftKey && document.activeElement === focusable.at(-1)) { event.preventDefault(); focusable[0].focus(); }
   }
   if (event.key === 'Escape' && screen === 'play') { pause(); return; }
+  if (screen === 'play' && !paused && !event.repeat && !event.ctrlKey && !event.metaKey && !event.altKey) {
+    // Enter always means Next once it is offered, even with a button focused; N is free unless a pupil uses that key.
+    const typing = event.target instanceof Element && !!event.target.closest('a, select, input, textarea, summary');
+    const enter = event.key === 'Enter' && !typing && !!session && (settings.enlarged ? session.turns[session.active].outcome !== 'waiting' : ready(session));
+    const letter = event.code === 'KeyN' && !typing && !(mode === 'keyboard' && settings.players.slice(0, settings.count).some(player => player.keys.includes('KeyN')));
+    if (enter || letter) { event.preventDefault(); perform('next'); return; }
+  }
   if ((screen === 'play' || screen === 'practice') && mode === 'keyboard' && !paused && !event.ctrlKey && !event.metaKey && !event.altKey && settings.players.slice(0, settings.count).some(player => player.keys.includes(event.code))) {
     event.preventDefault(); if (!event.repeat) keys.add(event.code);
   }
@@ -280,8 +273,11 @@ window.addEventListener('gamepaddisconnected', event => {
 });
 function loseController(): void {
   bindings = emptyBindings(); calibration = null; tested = emptyPairs(); pendingTests = emptyPairs(); resetInput();
-  if (session && !session.finished) { recovering = true; screen = 'play'; paused = false; pause('The assigned controller disconnected. Reconnect it and check every switch before resuming.'); }
-  else { screen = 'controls'; render(); }
+  if (session && !session.finished) {
+    recovering = true; paused = false; screen = 'play';
+    if (router.current() !== 'play') router.go('play');
+    pause('The assigned controller disconnected. Reconnect it and check every switch before resuming.');
+  } else enter('controls');
 }
 function frame(now: number): void {
   const snapshot = readDevices(); devices = snapshot.devices; deviceError = snapshot.error;
@@ -303,7 +299,6 @@ function frame(now: number): void {
   const actions = filter.sample(states, now);
   pulses = emptyPairs();
   let changed = false;
-  const cargoPlayers: number[] = [];
   const announcements: string[] = [];
   if (screen === 'practice' && !document.hidden && document.hasFocus()) {
     for (const { pupil, side } of actions) {
@@ -319,20 +314,23 @@ function frame(now: number): void {
   } else if (screen === 'play' && !paused && session) {
     for (const { pupil, side } of actions) {
       if (pupil >= settings.count || (settings.enlarged && pupil !== session.active) || session.turns[pupil].outcome !== 'waiting') continue;
-      if (answer(session, pupil, side)) { sound(); cargoPlayers.push(pupil); announcements.push(`Player ${pupil + 1}. Cargo ready. Thank you!`); }
+      play.press(pupil, side);
+      if (answer(session, pupil, side)) { sound(); announcements.push(`Player ${pupil + 1}. Star sent. Thank you!`); }
       else { flashes[pupil] = 'Let’s count together. You can try again.'; announcements.push(`Player ${pupil + 1}. ${flashes[pupil]}`); }
       changed = true;
     }
   }
   const completed = !!session && !session.finished && ready(session);
   if (transition.sample(now, settings.autoAdvance && completed, screen === 'play' && !paused && !document.hidden, settings.transitionSeconds * 1000)) perform('next');
-  if (changed) { render(); if (announcements.length) announce(announcements.join(' ')); cargoPlayers.forEach(animateCargo); }
+  if (changed) { render(); if (announcements.length) announce(announcements.join(' ')); }
   requestAnimationFrame(frame);
 }
-const router = createRouter<'title' | 'legacy'>(app);
+const router = createRouter<'title' | 'legacy' | 'play'>(app);
+const play = createPlayScreen(playState);
 const legacy: Screen = { mount() { legacyActive = true; render(); }, unmount() { legacyActive = false; } };
 router.register('title', createTitleScreen({ quality: settings.quality, onSetup: () => router.go('legacy') }));
 router.register('legacy', legacy);
+router.register('play', play);
 router.go('title');
 registerOffline((status, update) => {
   offlineStatus = status;

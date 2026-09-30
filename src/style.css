@@ -564,34 +564,6 @@ bottom:-15px;
 left:calc(-38px + var(--journey-offset));
 transform:rotate(36deg);
 transition:left .55s ease}
-.cargo-bay{
-position:absolute;
-display:flex;
-align-items:center;
-gap:1px;
-height:14px;
-top:52px;
-left:calc(-15px + var(--journey-offset));
-z-index:2}
-.cargo-pod{
-width:20px;
-height:14px;
-display:block}
-.cargo-0{color:#286c65}
-.cargo-1{color:#934a31}
-.cargo-2{color:#536396}
-.cargo-3{color:#80537c}
-.cargo-flight{
-position:fixed;
-width:40px;
-height:28px;
-z-index:50;
-pointer-events:none;
-animation:cargo-flight .65s cubic-bezier(.2,.7,.2,1) both}
-@keyframes cargo-flight{
-0%{transform:translate(0,0) scale(1);opacity:1}
-75%{opacity:1}
-100%{transform:translate(var(--cargo-x),var(--cargo-y)) scale(.55);opacity:0}}
 .mission-parts{
 display:flex;
 align-items:center;
@@ -686,35 +658,6 @@ font-weight:650;
 line-height:1.1;
 margin:0;
 letter-spacing:-.6px}
-.groups{
-display:flex;
-align-items:center;
-justify-content:center;
-gap:14px;
-min-height:35px}
-.quantity{
-display:inline-grid;
-grid-template-columns:repeat(5, 22px);
-gap:6px;
-justify-content:center;
-vertical-align:middle}
-.quantity:has(.dot:nth-child(1):last-child){
-grid-template-columns:22px}
-.quantity:has(.dot:nth-child(2):last-child){
-grid-template-columns:repeat(2,22px)}
-.quantity:has(.dot:nth-child(3):last-child){
-grid-template-columns:repeat(3,22px)}
-.quantity:has(.dot:nth-child(4):last-child){
-grid-template-columns:repeat(4,22px)}
-.dot{
-width:22px;
-height:22px;
-border-radius:50%;
-background:#304e5a;
-box-shadow:inset 0 -3px 0 #00000015}
-.plus{
-font-size:24px;
-font-weight:600}
 .answers{
 display:grid;
 grid-template-columns:1fr 1fr;
@@ -762,26 +705,6 @@ margin-top:5px}
 font-size:11px;
 margin:0;
 line-height:1.3}
-.teacher-small{
-display:flex;
-gap:4px}
-.teacher-small button{
-background:none;
-min-height:30px;
-font-size:10px;
-font-weight:500;
-padding:5px 8px;
-border-color:transparent;
-color:var(--muted)}
-.teacher-small button:hover:not(:disabled){
-border-color:var(--line)}
-.resolved{
-background:var(--tint)}
-.resolved .answer{
-opacity:.65}
-.resolved .station-footer>p{
-color:var(--accent);
-font-weight:650}
 .practice-symbol{
 margin:0;
 color:var(--accent)}
@@ -821,69 +744,13 @@ justify-content:flex-end}
 .teacher-bar button{
 font-size:12px;
 min-height:44px}
-.turn-note,.practice-progress{
+.practice-progress{
 font-size:11px;
 color:var(--muted);
 margin:0 5px}
-.stations.enlarged,.stations.solo{
+.stations.solo{
 grid-template-columns:minmax(0,900px);
 justify-content:center}
-.enlarged .station{
-padding:26px}
-.enlarged .question-area{
-min-height:180px}
-.enlarged .prompt{
-font-size:44px}
-.enlarged .answer{
-min-height:145px}
-.enlarged .answer-value{
-font-size:70px}
-.enlarged .quantity{
-transform:scale(1.3);
-margin:10px 24px}
-.enlarged .station-heading h2{
-font-size:22px}
-.enlarged .station-footer>p{
-font-size:16px}
-.scaffold-space{
-display:none}
-.scaffold{
-display:flex;
-justify-content:center;
-gap:10px;
-padding:10px;
-background:var(--tint);
-margin-top:8px;
-border-radius:8px}
-.scaffold span{
-font-weight:700;
-font-size:20px}
-.modal-backdrop{
-position:fixed;
-inset:0;
-background:#142b3ec9;
-backdrop-filter:blur(6px);
-display:grid;
-place-items:center;
-padding:24px;
-z-index:10}
-.pause-dialog{
-max-height:calc(100dvh - 48px);
-overflow-y:auto;
-background:#fffdf8;
-border-radius:20px;
-padding:38px;
-width:min(500px,100%);
-box-shadow:0 20px 60px #0004}
-.pause-dialog h1{
-font-size:36px}
-.pause-dialog p{
-line-height:1.6;
-font-size:14px}
-.button-stack{
-display:grid;
-gap:12px;
-margin-top:24px}
 .results{
 text-align:center;
 padding-top:55px}
@@ -980,20 +847,6 @@ padding:6px 0}
 min-height:96px}
 .station-footer{
 min-height:29px}
-.teacher-small button{
-min-height:26px}
-.stations:not(.enlarged) .scaffold{
-min-height:28px;
-margin:0;
-padding:2px;
-gap:8px;
-align-items:center;
-font-size:12px}
-.stations:not(.enlarged) .scaffold-space{
-display:block;
-height:28px}
-.enlarged .question-area{
-min-height:140px}
 }
 
 @media(max-width:950px){
@@ -1018,8 +871,6 @@ gap:25px;
 min-width:220px}
 .station-heading h2 span{
 display:none}
-.quantity{
-gap:4px}
 .play-page{
 padding:0 18px}
 .station{
@@ -1086,17 +937,10 @@ display:inline}
 gap:10px}
 .teacher-bar .button-row{
 gap:8px}
-.turn-note,.practice-progress{
+.practice-progress{
 width:100%;
 order:3;
 text-align:center}
-.enlarged .station{
-padding:15px}
-.enlarged .prompt{
-font-size:34px}
-.enlarged .quantity{
-transform:none;
-margin:0}
 .results h1{
 font-size:40px}
 .result-planets{

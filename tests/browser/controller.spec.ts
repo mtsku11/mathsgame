@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { openSetup } from '../helpers';
+import { correctSide, openSetup, station } from '../helpers';
 
 async function press(page: Page, buttons: number[]) {
   await page.evaluate(buttons => window.dispatchEvent(new CustomEvent('mock-buttons', { detail: buttons })), buttons);
@@ -54,16 +54,14 @@ for (const count of [1, 2, 3, 4]) {
     await mapAndCheck(page, count);
     await page.getByRole('button', { name: 'Launch the journey' }).click();
     await page.waitForTimeout(600);
-    const first = page.locator('.station').first();
-    const total = await first.locator('.question-area .dot').count();
-    const side = (await first.locator('.answer-value').allTextContents()).findIndex(value => Number(value) === total);
-    await press(page, [side]); await press(page, []);
-    await expect(first).toContainText('Cargo ready');
-    const before = await page.locator('.station').allTextContents();
+    const first = station(page, 0);
+    await press(page, [await correctSide(first)]); await press(page, []);
+    await expect(first.locator('.sp-pill')).toHaveText('Star sent!');
+    const before = await page.locator('.sp-st').allTextContents();
     await page.evaluate(() => window.dispatchEvent(new Event('mock-unrelated-disconnect')));
     await page.waitForTimeout(250);
     await expect(page.getByRole('dialog')).toHaveCount(0);
-    expect(await page.locator('.station').allTextContents()).toEqual(before);
+    expect(await page.locator('.sp-st').allTextContents()).toEqual(before);
     await page.evaluate(() => window.dispatchEvent(new CustomEvent('mock-connection', { detail: false })));
     await expect(page.getByRole('dialog')).toContainText('disconnected');
     await page.evaluate(() => window.dispatchEvent(new CustomEvent('mock-connection', { detail: true })));
@@ -73,7 +71,10 @@ for (const count of [1, 2, 3, 4]) {
     await expect(page.getByRole('button', { name: 'Check switches in practice' })).toBeDisabled();
     await mapAndCheck(page, count);
     await page.getByRole('button', { name: 'Resume journey' }).click();
-    expect(await page.locator('.station').allTextContents()).toEqual(before);
+    await expect(page.locator('.sp-st')).toHaveCount(count);
+    expect(await page.locator('.sp-st').allTextContents()).toEqual(before);
+    await expect(station(page, 0).locator('.sp-pill')).toHaveText('Star sent!');
+    await expect(page.locator('.sp-core-num')).toHaveText('1');
     expect(errors).toEqual([]);
   });
 }
