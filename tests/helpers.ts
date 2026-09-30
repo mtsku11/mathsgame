@@ -208,3 +208,16 @@ export async function startBoostRound(page: Page, count: number): Promise<void> 
   await page.getByRole('button', { name: 'Boost round!' }).click();
   await expect.poll(() => boostPhase(page), { timeout: 10000 }).toBe('live');
 }
+
+// Passes every pupil and skips that round's boost from the pause overlay, then moves on: leaves the crew at the start of `round` with its boost still to play.
+export async function skipToRound(page: Page, count: number, round: number): Promise<void> {
+  for (let current = 1; current < round; current++) {
+    await passAll(page, count);
+    await page.getByRole('button', { name: 'Boost round!' }).click();
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'Skip boost round' }).click();
+    await nextButton(page).click();
+  }
+  await passAll(page, count);
+  await page.waitForTimeout(400);
+}

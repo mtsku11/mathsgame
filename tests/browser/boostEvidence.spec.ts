@@ -100,23 +100,6 @@ test('video: a Warp Drive boost that runs out of time ends happily at tier 1', a
   });
 });
 
-test('video: the placeholder theme (Firework Frenzy round) with three pupils reaching MAX', async ({ browser }) => {
-  await record(browser, 'placeholder-theme-max', async page => {
-    await startGame(page, { count: 3, boost: { autoStart: false, seconds: 12, difficulty: 'easy' } });
-    await page.waitForTimeout(800);
-    await passAll(page, 3);
-    await page.waitForTimeout(1800);
-    await page.getByRole('button', { name: 'Boost round!' }).click();
-    await expect.poll(() => boostPhase(page), { timeout: 10000 }).toBe('live');
-    await page.waitForTimeout(500);
-    await mash(page, { mode: 'keys', pupils: [0, 1, 2], ms: 20000, step: 70, untilNotLive: true });
-    await page.waitForTimeout(1200);
-    await shot(page, 'placeholder-max');
-    await expect.poll(() => boostFlow(page), { timeout: 12000 }).toBe('done');
-    await page.waitForTimeout(1200);
-  });
-});
-
 test('video and screenshots: reduced-motion Warp Drive is a calm fade with the same information', async ({ browser }) => {
   await record(browser, 'warp-reduced-motion', async page => {
     await toWarpRound(page, 4, { seconds: 20 }, true);

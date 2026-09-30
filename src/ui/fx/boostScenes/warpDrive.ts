@@ -227,6 +227,7 @@ export function createWarpDriveScene(): BoostScene {
       const ships = mothership(200).replaceAll('sp-core-', 'sp-bcore-');
       root = document.createElement('div');
       root.className = 'sp-wd';
+      root.dataset.boostScene = 'warpDrive';
       root.innerHTML = `<div class="sp-wd-tunnel"></div><div class="sp-wd-glow"></div>
 <div class="sp-wd-ship"><svg class="sp-wd-flames" viewBox="0 0 200 90" width="200" height="90" aria-hidden="true">${[62, 138].map(x => `<g transform="translate(${x} 0)"><path d="M-11 0 Q0 84 11 0Z" fill="#FFD23F"/><path d="M-5 0 Q0 48 5 0Z" fill="#fff"/></g>`).join('')}</svg>${ships}</div>`;
       next.world.append(root);

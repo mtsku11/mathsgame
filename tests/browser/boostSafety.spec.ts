@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { boostFlow, boostPhase, mash, nextButton, passAll, startGame } from '../helpers';
+import { boostFlow, boostPhase, mash, skipToRound, startGame } from '../helpers';
 
 // WCAG 2.3.1 flash safety for the boost finales, measured from captured frames rather than from the code: at most one large flash in any second.
 // The page is screencast at about 50 frames a second at 320x180; each frame's mean luminance is computed and a "large flash" is a frame-to-frame jump of more than 0.1 of full scale.
@@ -64,20 +64,13 @@ async function mashToMax(page: Page): Promise<void> {
 
 async function toRound(page: Page, round: number): Promise<void> {
   await startGame(page, { count: 4, boost: { autoStart: false, seconds: 12, difficulty: 'easy' } });
-  for (let current = 1; current < round; current++) {
-    await passAll(page, 4);
-    await page.getByRole('button', { name: 'Boost round!' }).click();
-    await page.keyboard.press('Escape');
-    await page.getByRole('button', { name: 'Skip boost round' }).click();
-    await nextButton(page).click();
-  }
-  await passAll(page, 4);
-  await page.waitForTimeout(400);
+  await skipToRound(page, 4, round);
 }
 
 const cases = [
   { name: 'Warp Drive MAX (flare, shockwave ring, shake, zoom-blur tunnel, HYPERSPACE card, arrival)', round: 2 },
-  { name: 'placeholder theme MAX (star burst, confetti, glitter rain)', round: 1 },
+  { name: 'Firework Frenzy MAX (three waves of shells, star-face shell, glitter rain, MEGA BOOST card)', round: 1 },
+  { name: 'Bubble Blast POP (stretch, pop, shockwave ring, gum shreds, stars and sweets, splats, POP card)', round: 3 },
 ];
 for (const { name, round } of cases) {
   test(`flash safety: ${name} has at most one large luminance flash in any second`, async ({ page }) => {

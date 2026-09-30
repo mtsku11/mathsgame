@@ -380,3 +380,39 @@ test('the banner says All stars collected! only when every turn was correct, and
   expect(layout.bottom).toBeLessThanOrEqual(layout.stationTop);
   await expect(page.locator('.sp-banner')).toBeHidden({ timeout: 4000 });
 });
+
+// Phase 2 follow-up: the star's path was tuned for four players. In every layout it must leave the pressed answer button and land in the mothership core, inside the stage all the way.
+test('the flying star starts at the pressed button and ends at the mothership core in the 1, 2, 3 and 4 player layouts', async ({ page }) => {
+  test.setTimeout(120000);
+  const errors = errorsOf(page);
+  for (const count of [1, 2, 3, 4]) {
+    await startGame(page, { count });
+    await page.evaluate(() => {
+      const stage = document.querySelector('.stage')!, holder = window as unknown as { __path: { x: number; y: number }[] };
+      holder.__path = [];
+      const loop = (): void => {
+        const fly = document.querySelector('.sp-fly');
+        if (fly) { const box = fly.getBoundingClientRect(), frame = stage.getBoundingClientRect(), k = 1280 / frame.width; holder.__path.push({ x: (box.left + box.width / 2 - frame.left) * k, y: (box.top + box.height / 2 - frame.top) * k }); }
+        requestAnimationFrame(loop);
+      };
+      requestAnimationFrame(loop);
+    });
+    for (let pupil = 0; pupil < count; pupil++) {
+      const target = station(page, pupil);
+      const button = target.locator('.sp-btn').nth(await correctSide(target));
+      await page.evaluate(() => { (window as unknown as { __path: unknown[] }).__path = []; });
+      const from = await button.evaluate(element => { const box = element.getBoundingClientRect(), frame = document.querySelector('.stage')!.getBoundingClientRect(), k = 1280 / frame.width; return { x: (box.left + box.width / 2 - frame.left) * k, y: (box.top + box.height / 2 - frame.top) * k }; });
+      await button.click();
+      await expect(page.locator('.sp-fly')).toHaveCount(1);
+      await expect(page.locator('.sp-fly')).toHaveCount(0, { timeout: 3000 });
+      const path = await page.evaluate(() => (window as unknown as { __path: { x: number; y: number }[] }).__path);
+      const core = await page.locator('.sp-hub .sp-ship').evaluate(element => { const box = element.getBoundingClientRect(), frame = document.querySelector('.stage')!.getBoundingClientRect(), k = 1280 / frame.width; return { x: (box.left + box.width / 2 - frame.left) * k, y: (box.top + box.height / 2 - frame.top) * k }; });
+      const gap = (a: { x: number; y: number }, b: { x: number; y: number }): number => Math.hypot(a.x - b.x, a.y - b.y);
+      expect(path.length, `${count} players, pupil ${pupil + 1}: frames sampled`).toBeGreaterThan(20);
+      expect(gap(path[0], from), `${count} players, pupil ${pupil + 1}: start to the pressed button`).toBeLessThan(30);
+      expect(gap(path.at(-1)!, core), `${count} players, pupil ${pupil + 1}: end to the core`).toBeLessThan(30);
+      expect(path.every(point => point.x > 0 && point.x < 1280 && point.y > 0 && point.y < 720), `${count} players, pupil ${pupil + 1}: stays on the stage`).toBe(true);
+    }
+  }
+  expect(errors).toEqual([]);
+});
