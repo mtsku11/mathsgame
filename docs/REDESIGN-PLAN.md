@@ -100,7 +100,7 @@ Flow: **Title → Teacher setup → Switch setup (controller mode) → Crew chec
 
 Layouts: 1 player = one large station with the hub beside it; 2 = two stations either side of the hub; 3/4 = 2×2 around the hub (empty fourth slot shows the destination planet). Station order left→right, top→bottom matches seating. Answer hit areas ≥ 112 px; numerals ≥ 56 px; prompts ≥ 28 px.
 
-Teacher layer: round pause button (Esc/Space); ghost Help/Pass buttons per station (H/P then player number); Next appears when a round is ready (Enter/N); "Say it" speaker button per station replays that pupil's question (never several voices at once). Teacher controls never sit between a pupil and their answers.
+Teacher layer: round pause button (Esc); ghost Help/Pass buttons per station (buttons only: letter and Space shortcuts would collide with pupils' keyboard switches, e.g. the default P); Next appears when a round is ready (Enter/N); "Say it" speaker button per station replays that pupil's question (never several voices at once). Teacher controls never sit between a pupil and their answers.
 
 Options: low-stimulation mode (static background, 25% particles, softer palette, music off, acknowledgements kept); switch-cap colours (answer button fill matches the physical switch, always with position + chevron); narration on/off; music and effects volumes.
 

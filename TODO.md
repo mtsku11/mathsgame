@@ -1,18 +1,18 @@
 # Number Crew build backlog
 
-Status: Phase 1 playable-slice and Phase 2 full-mission software gates are verified. The public GitHub Pages build is live; its deployment passed 15 unit tests and all 21 hosted Chromium scenarios, including offline play, mission progress, access announcements, visibility recovery, and unrelated-controller handling, on 30 September 2026. Manual classroom access acceptance and physical XAC verification remain open. Unchecked items require implementation or further acceptance evidence; they do not necessarily mean the code is absent.
+Status: Phase 1 playable-slice and Phase 2 full-mission software gates are verified. The Star Pilots redesign (branch `redesign`, Phases 0–6 done, Phase 7 awaiting owner approval of the preview) replaces the practice screen with crew check-in, supports 1–4 pupils and adds boost rounds, audio and Spotlight turns; it is not merged or deployed. The public GitHub Pages build is live; its deployment passed 15 unit tests and all 21 hosted Chromium scenarios, including offline play, mission progress, access announcements, visibility recovery, and unrelated-controller handling, on 30 September 2026. Manual classroom access acceptance and physical XAC verification remain open. Unchecked items require implementation or further acceptance evidence; they do not necessarily mean the code is absent.
 
 ## Confirm classroom facts
 
-- [x] Confirm three/four pupils share one screen and one XAC, with two inputs each.
+- [x] Confirm one to four pupils share one screen and one XAC, with two inputs each (owner update, 30 September 2026).
 - [x] Confirm counting 1–5 and addition within 10.
 - [x] Confirm the classroom computer is a Windows PC.
 - [ ] Record available switch count/models, Windows/browser versions, USB/Bluetooth, and display.
 - [ ] Record age range, suitable theme/tone, per-pupil maths allocation, and helpful visual/audio supports.
-- [ ] Confirm whether teacher-led spoken prompts are sufficient or local recorded narration is required.
+- [x] Narration: the owner asked for bundled generated narration (redesign, 30 September 2026); it can be turned off in setup.
 - [ ] Confirm lesson date, setup time, session length, internet access, and offline/browser-storage constraints.
 
-Use PLAN.md's provisional defaults for independent software work while the remaining details are unresolved. Preserve the confirmed single-XAC, 3–4-pupil scope.
+Use PLAN.md's provisional defaults for independent software work while the remaining details are unresolved. Preserve the confirmed single-XAC, 1–4-pupil scope.
 
 ## Phase 0 — Input proof
 
