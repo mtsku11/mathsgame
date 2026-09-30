@@ -1,9 +1,9 @@
 // Direction A — Star Pilots: glowing arcade space, dark high-contrast sky.
 import { starPath, marker, icons, rng, f } from './lib.mjs';
 
-const fonts = 'https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Titan+One&display=swap';
+export const fonts = 'https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Titan+One&display=swap';
 const ink = '#1A1446';
-const P = [
+export const P = [
   { c: '#FF5DA2', l: '#FFB3D4', name: 'Pink pilot' },
   { c: '#36D6FF', l: '#AEEFFF', name: 'Blue pilot' },
   { c: '#FF9F43', l: '#FFD3A6', name: 'Orange pilot' },
@@ -46,7 +46,7 @@ export function star(size = 60, cls = '') {
   return `<svg class="a-star ${cls}" viewBox="0 0 100 100" width="${size}" height="${size}" aria-hidden="true"><path d="${starPath(50, 54, 44, 19)}" fill="#FFD23F" stroke="#FFD23F" stroke-width="9" stroke-linejoin="round"/><path d="${starPath(50, 54, 26, 11)}" fill="#FFF0A8" opacity=".75"/></svg>`;
 }
 
-function planetSvg(kind, size) {
+export function planetSvg(kind, size) {
   const k = {
     ring: `<circle cx="50" cy="50" r="30" fill="#FFB84D"/><path d="M26 44 Q50 36 74 44" stroke="#E08A1E" stroke-width="5" fill="none" opacity=".6"/><path d="M28 58 Q50 52 72 58" stroke="#E08A1E" stroke-width="4" fill="none" opacity=".5"/><ellipse cx="50" cy="52" rx="46" ry="11" fill="none" stroke="#FFE08A" stroke-width="5" transform="rotate(-14 50 52)"/>`,
     candy: `<circle cx="50" cy="50" r="34" fill="#FF6FB5"/><circle cx="38" cy="40" r="7" fill="#FF9CCB"/><circle cx="62" cy="60" r="10" fill="#E54C97"/><circle cx="60" cy="34" r="4" fill="#FFC2DF"/><path d="M22 60 Q50 72 78 58" stroke="#FFC2DF" stroke-width="4" fill="none" opacity=".7"/>`,
@@ -55,7 +55,7 @@ function planetSvg(kind, size) {
   return `<svg viewBox="0 0 100 100" width="${size}" height="${size}" aria-hidden="true">${k}</svg>`;
 }
 
-const css = `
+export const css = `
 body{margin:0}
 *{box-sizing:border-box}
 .a-root{position:relative;width:1280px;height:720px;overflow:hidden;background:radial-gradient(ellipse 80% 70% at 50% 55%,#231566 0%,#130B45 55%,#08051F 100%);font-family:'Baloo 2',system-ui,sans-serif;color:#fff}
@@ -143,7 +143,7 @@ body{margin:0}
 .a-note{font-size:17px;font-weight:600;color:#E8E3FF;line-height:1.45;margin:0;max-width:560px}
 `;
 
-function bgStars(seed) {
+export function bgStars(seed) {
   const r = rng(seed);
   let s = '';
   for (let i = 0; i < 110; i++) {
@@ -170,7 +170,7 @@ function route() {
 </svg>`;
 }
 
-function ship() {
+export function ship() {
   return `<svg viewBox="0 0 210 210" width="210" height="210" aria-hidden="true">
 <defs><radialGradient id="a-core" cx="50%" cy="42%" r="60%"><stop offset="0" stop-color="#FFFBE0"/><stop offset=".45" stop-color="#FFD23F"/><stop offset="1" stop-color="#FF8A1E"/></radialGradient>
 <radialGradient id="a-halo" cx="50%" cy="50%" r="50%"><stop offset=".5" stop-color="#FFD23F" stop-opacity=".55"/><stop offset="1" stop-color="#FFD23F" stop-opacity="0"/></radialGradient></defs>

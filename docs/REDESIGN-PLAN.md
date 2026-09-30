@@ -126,6 +126,36 @@ Options: low-stimulation mode (static background, 25% particles, softer palette,
 
 Destination travel never depends on boost performance: Warp Drive always arrives; the tier only changes how spectacular the journey is.
 
+Storyboards: `design/concepts/boost.mjs` → `reference/BOOST-intro.png`, `BOOST-warpLive.png`, `BOOST-warpMax.png`, `BOOST-fireworksMax.png`, `BOOST-bubbleLive.png` (also on the design canvas).
+
+### Beat sheet (full motion; times from the start of each phase)
+
+**Every theme — live phase feel**
+- Press → saucer squash (60 ms) and bounce; bolt leaves the saucer within 1 frame and reaches the target in 220–280 ms along a slight curve; on arrival: spark burst (8–12 particles), target flinch (scale 1.03 for 80 ms), meter tick (fill tweens 120 ms, stripes scroll).
+- Saucer heat: glow under each saucer scales with that pupil's 1 s press rate; at high heat add a trail of 3–5 embers.
+- Tier-up: meter star ignites with a ring burst, word card ("BOOST!", "SUPER!", "MEGA!") slams in at 140% → 100% (elastic 400 ms), holds 900 ms, exits upward; background nebula brightens one step; stinger + voice.
+- Idle nudge: a pupil idle for 4 s gets a saucer wiggle and sparkle, nothing else.
+
+**Warp Drive** (target: mothership centre stage, 1.8× scale)
+- Tier 0→1: core glow grows with energy; slow parallax stars drift down.
+- Tier 1: engine flames ignite under the ship (flicker 8 Hz max, small amplitude); stars speed up.
+- Tier 2: stars stretch into short streaks radiating from the ship; a low hum rises in pitch with energy.
+- MAX (4.5 s): 0.0 core flare (one bright bloom, ≤ 250 ms) + shockwave ring expanding to screen edge (600 ms) + short shake ≤ 6 px; 0.3–3.2 warp tunnel: radial streaks accelerating, zoom-blur ramping up, streak colours cycling through the pilots' palette, ship shrinks toward the vanishing point, pilots' saucers tilt and trail; "HYPERSPACE!" card at 0.6 s; 3.2–4.5 streaks decelerate, next planet swells from a dot to hero size with a soft shimmer, voice "Welcome to Candy Planet!".
+- Lower tiers: same arc, shorter tunnel (tier 1: 1.2 s; tier 2: 2.2 s), fewer streaks, no shake.
+
+**Firework Frenzy** (target: the night sky over the current planet's horizon)
+- Each press launches a rocket from that saucer (trail of 6–10 embers, 400–600 ms rise), bursting into a star-shaped shell in that pupil's colour (40–80 particles, gravity, fade 900 ms). Rockets cap at 10 in flight; extra presses still add energy and fire smaller sparkles.
+- Tier 2: shells alternate peony / ring / crackle; tier 3: glitter willows that hang and fall.
+- MAX (6 s): 0–3.5 barrage in three waves (8, 10, 12 shells) across the whole sky in all pilots' colours; 3.5 a giant star-face shell (smile + two eyes) centred; 4.2 golden glitter rain over everything; "MEGA BOOST!" card; crowd cheer.
+- Lower tiers: a single wave (tier 1) or two waves (tier 2), no star-face.
+
+**Bubble Blast** (target: Gloop, the big friendly purple jelly alien, blowing bubblegum)
+- Each bolt pumps the bubble: scale steps up with energy, every step an elastic overshoot (scaleX/scaleY squash 6%) and a rubbery squeak whose pitch rises with size; Gloop's cheeks puff and eyes widen per tier; the bubble trembles faster as it nears full.
+- MAX (4 s): 0.0 bubble stretches (scale 1.08, 150 ms) then POPS: shockwave ring, 150–250 pink gum shreds + stars + sweets radiating with spin and gravity, a few gum splats stick to the screen edges and slide off over 2 s; 0.6 Gloop covered in gum, giggles (squash-and-stretch laugh loop); "POP!" card; pilots bounce.
+- Lower tiers: smaller bubble pops with proportionally fewer particles.
+
+**Wrap (1.5 s, all themes)**: tier badge centre ("Boost!", "Super boost!", "Mega boost!"), pilots cheer, then everything clears and the next maths round deals in. Answer input arms only after every switch is released.
+
 ### Individual feel without competition
 
 - Each saucer glows hotter with that pupil's recent press rate (1 s moving average): visible effort, no numbers.

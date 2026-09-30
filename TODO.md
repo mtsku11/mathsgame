@@ -72,7 +72,7 @@ Use PLAN.md's provisional defaults for independent software work while the remai
 ## Redesign — Star Pilots (docs/REDESIGN-PLAN.md, branch `redesign`)
 
 - [x] Phase 0 — Foundations (stage, router, events, motion, Pixi layer, fonts, settings v2, 1–4 players)
-- [ ] Phase 1 — Play screen static fidelity
+- [x] Phase 1 — Play screen static fidelity (39 unit, 59 browser; 1–4 player layouts verified at 720p/1080p)
 - [ ] Phase 2 — Game feel
 - [ ] Phase 3 — Boost rounds
 - [x] Audio assets produced and checked (orchestrator): 5 music, 30 effects, 104 voice lines (Whisper 104/104); owner listening review pending
