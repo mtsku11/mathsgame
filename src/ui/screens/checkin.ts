@@ -2,6 +2,7 @@ import '../checkin.css';
 import { gsap } from 'gsap';
 import type { Screen } from '../../app/router';
 import type { Pair } from '../../input/normalize';
+import { paintCap, type CapColour } from '../art/caps';
 import { icons, shapeMarker } from '../art/icons';
 import { pilot, pilotColors, type PilotMood } from '../art/pilot';
 import { skyStars } from '../art/stars';
@@ -13,6 +14,7 @@ export interface CheckInState {
   mode: 'controller' | 'keyboard';
   // The key letters shown under each switch in keyboard mode.
   keys: [string, string][];
+  caps: [CapColour, CapColour][];
   // Pressed at least once (the pose follows this) and pressed then released (the switch is checked).
   touched: Pair[];
   checked: Pair[];
@@ -97,6 +99,7 @@ export function createCheckInScreen(source: () => CheckInState): CheckInScreen {
         card.querySelectorAll<HTMLButtonElement>('.ck-cap').forEach(cap => {
           const side = Number(cap.dataset.answerSide);
           const isChecked = state.checked[i][side], isTouched = state.touched[i][side];
+          paintCap(cap, state.caps[i][side]);
           cap.classList.toggle('is-right', isChecked);
           cap.classList.toggle('is-pressed', isTouched && !isChecked);
           cap.classList.toggle('is-ready', !isTouched && !isChecked);

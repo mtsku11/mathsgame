@@ -1,9 +1,10 @@
 import type { Side } from '../../game/questions';
 import { icons } from '../art/icons';
+import { paintCap, type CapColour } from '../art/caps';
 import { burstSvg, starCluster } from '../art/stars';
 
 export type AnswerLook = 'ready' | 'right' | 'dim' | 'try' | 'idle';
-export interface AnswerState { player: number; value: number; picture: boolean; look: AnswerLook; disabled: boolean }
+export interface AnswerState { player: number; value: number; picture: boolean; look: AnswerLook; disabled: boolean; cap: CapColour }
 export interface AnswerButton { el: HTMLButtonElement; mount(parent: HTMLElement): void; update(state: AnswerState): void; press(): void }
 
 export function createAnswerButton(side: Side): AnswerButton {
@@ -19,6 +20,7 @@ export function createAnswerButton(side: Side): AnswerButton {
     mount(parent) { parent.append(el); },
     update(state) {
       el.dataset.answerPlayer = String(state.player);
+      paintCap(el, state.cap);
       const label = `Player ${state.player + 1}, ${side ? 'right' : 'left'} answer, ${state.value}`;
       if (el.getAttribute('aria-label') !== label) el.setAttribute('aria-label', label);
       const key = `${state.picture ? 'p' : 'n'}${state.value}`;

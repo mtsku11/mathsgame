@@ -34,7 +34,7 @@ test('anonymous comfort and input preferences survive reload while a new session
   await expect(page.getByLabel('Celebration delay')).toHaveValue('7');
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('number-crew-settings-v2')!));
   expect(Object.keys(saved).sort()).toEqual(['autoAdvance', 'boost', 'count', 'effectsVolume', 'enlarged', 'lowStim', 'musicVolume', 'narration', 'players', 'quality', 'quiet', 'reduced', 'simple', 'transitionSeconds', 'voiceVolume']);
-  expect(Object.keys(saved.players[0]).sort()).toEqual(['boostPower', 'cooldown', 'keys', 'preset', 'quantities']);
+  expect(Object.keys(saved.players[0]).sort()).toEqual(['boostPower', 'caps', 'cooldown', 'keys', 'preset', 'quantities']);
   await page.getByRole('button', { name: 'Set up the switches' }).click();
   await expect(page.getByRole('button', { name: 'Start crew check-in' })).toBeDisabled();
   await page.evaluate(() => {

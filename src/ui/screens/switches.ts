@@ -4,6 +4,7 @@ import type { Side } from '../../game/questions';
 import type { Binding } from '../../input/gamepad';
 import type { Pair } from '../../input/normalize';
 import { icons, shapeMarker } from '../art/icons';
+import { paintCap, type CapColour } from '../art/caps';
 import { pilot, pilotColors, type PilotMood } from '../art/pilot';
 import { skyStars, starBadge } from '../art/stars';
 
@@ -14,6 +15,7 @@ export interface SwitchState {
   message: string;
   complete: boolean;
   recovering: boolean;
+  caps: [CapColour, CapColour][];
 }
 export interface SwitchScreen extends Screen {
   update(state: SwitchState): void;
@@ -77,6 +79,7 @@ export function createSwitchScreen(source: () => SwitchState): SwitchScreen {
         const player = Number(slot.dataset.mapPlayer), side = Number(slot.dataset.mapSide);
         const binding = state.bindings[player][side];
         const learning = state.learning?.[0] === player && state.learning[1] === side;
+        paintCap(slot, state.caps[player][side]);
         slot.classList.toggle('is-bound', !!binding);
         slot.classList.toggle('is-learning', learning);
         slot.classList.toggle('learning', learning);

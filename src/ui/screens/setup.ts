@@ -4,6 +4,7 @@ import type { Preset, Side } from '../../game/questions';
 import type { BoostPower, BoostSettings, Settings } from '../../settings';
 import { icons, shapeMarker } from '../art/icons';
 import { pilot, pilotColors } from '../art/pilot';
+import { caps, type CapColour } from '../art/caps';
 import { skyStars, starBadge } from '../art/stars';
 import { setLowStim, setReducedMotion } from '../fx/motion';
 
@@ -34,6 +35,7 @@ export function createSetupScreen(source: () => SetupState, hooks: SetupHooks): 
   const accessRows = (): string => settings.players.slice(0, settings.count).map((player, i) => `<fieldset class="tp-sub"><legend class="sr-only">Player ${i + 1} access</legend><h3>Player ${i + 1} · ${pilotColors[i].name}</h3>
 <label class="tp-check"><input type="checkbox" data-quantity="${i}" ${checked(player.quantities)}> Picture answers for addition</label>
 <div class="tp-row"><label class="tp-field"><span>Input cooldown</span><select data-cooldown="${i}">${[0, 250, 500, 750, 1000, 1500].map(n => `<option value="${n}" ${selected(player.cooldown === n)}>${n} ms</option>`).join('')}</select></label>
+${player.caps.map((cap, side) => `<label class="tp-field"><span>${side ? 'Right' : 'Left'} switch colour</span><select aria-label="Player ${i + 1} ${side ? 'right' : 'left'} switch colour" data-cap-player="${i}" data-cap-side="${side}"><option value="pilot" ${selected(cap === 'pilot')}>Pilot colour</option>${caps.map(spec => `<option value="${spec.id}" ${selected(cap === spec.id)}>${spec.name}</option>`).join('')}</select></label>`).join('')}
 ${player.keys.map((key, side) => `<label class="tp-field"><span>${side ? 'Right' : 'Left'} keyboard key</span><select aria-label="Player ${i + 1} ${side ? 'right' : 'left'} key" data-key-player="${i}" data-key-side="${side}">${letters.map(letter => `<option value="Key${letter}" ${selected(key === `Key${letter}`)}>${letter}</option>`).join('')}</select></label>`).join('')}</div></fieldset>`).join('');
 
   const volume = (id: string, label: string, value: number, describe = ''): string =>
@@ -49,7 +51,7 @@ ${player.keys.map((key, side) => `<label class="tp-field"><span>${side ? 'Right'
 <div class="tp-grid">
 <section class="tp-card wide" aria-labelledby="tp-crew-title"><h2 id="tp-crew-title">The crew</h2><p class="tp-hint">Pick how many pilots play, and the maths each one gets.</p>
 <div class="tp-row"><label class="tp-field"><span>Crew size</span><select id="crew-count">${[1, 2, 3, 4].map(n => `<option value="${n}" ${selected(settings.count === n)}>${plural(n)}</option>`).join('')}</select></label>
-<label class="tp-field"><span>Screen layout</span><select id="layout"><option value="together" ${selected(!settings.enlarged)}>Play together</option><option value="enlarged" ${selected(settings.enlarged)}>Enlarged turns</option></select></label></div>
+<label class="tp-field"><span>Screen layout</span><select id="layout"><option value="together" ${selected(!settings.enlarged)}>Play together</option><option value="enlarged" ${selected(settings.enlarged)}>Spotlight turns</option></select></label></div>
 <div class="tp-crew" id="tp-crew">${pupilRows()}</div></section>
 <section class="tp-card" aria-labelledby="tp-input-title"><fieldset class="tp-choices"><legend id="tp-input-title">How will the crew answer?</legend>
 <label class="tp-choice"><input type="radio" name="input-mode" value="controller" ${checked(mode === 'controller')}><span>Xbox Adaptive Controller<small>One shared controller · 2 switches per player</small></span></label>
@@ -92,6 +94,7 @@ ${player.keys.map((key, side) => `<label class="tp-field"><span>${side ? 'Right'
     else if (target.dataset.preset !== undefined) settings.players[Number(target.dataset.preset)].preset = target.value as Preset;
     else if (target.dataset.quantity !== undefined) settings.players[Number(target.dataset.quantity)].quantities = target.checked;
     else if (target.dataset.cooldown !== undefined) settings.players[Number(target.dataset.cooldown)].cooldown = Number(target.value);
+    else if (target.dataset.capPlayer !== undefined) settings.players[Number(target.dataset.capPlayer)].caps[Number(target.dataset.capSide)] = target.value as CapColour;
     else if (target.dataset.keyPlayer !== undefined) {
       const player = Number(target.dataset.keyPlayer), side = Number(target.dataset.keySide) as Side;
       if (settings.players.some((p, i) => p.keys.some((key, s) => key === target.value && (i !== player || s !== side)))) {

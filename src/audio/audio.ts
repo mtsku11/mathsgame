@@ -275,7 +275,7 @@ export function createAudio(settings: AudioSettings, backend: Backend = silentRe
     if (lines.length) later(starts[0], 'help', () => step(0));
     if (narrated && !lines.length) helpRun = null;
   });
-  events.on('sayQuestion', ({ question }) => say(questionLine(question), 'replace', { tag: 'sayit', requested: true }));
+  events.on('sayQuestion', ({ question, auto }) => say(questionLine(question), 'replace', { tag: 'sayit', requested: !auto, expiresMs: auto ? 8000 : undefined }));
   events.on('roundReady', () => {
     cancelTimers('praise');
     playJingle('jingle_round', true);

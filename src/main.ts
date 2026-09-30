@@ -84,6 +84,11 @@ function noteReady(): void {
   if (session && !session.finished && ready(session) && readyRound !== session.round) { readyRound = session.round; boostRun.ready(); events.emit('roundReady', { round: session.round }); }
 }
 function announce(message: string): void { announcer.textContent = message; }
+// A Spotlight turn announces itself and the narrator reads that pupil's question; narration, quiet and low stimulation decide whether it is heard.
+function beginTurn(): void {
+  announce(missionAnnouncement());
+  if (settings.enlarged && session && !session.finished) events.emit('sayQuestion', { player: session.active, question: session.turns[session.active].question, auto: true });
+}
 // What every switch is doing right now: keyboard keys or the learned controller buttons.
 function readRaw(): Pair[] {
   return settings.players.map((player, i) => [0, 1].map(side => mode === 'controller' ? down(bindings[i][side], devices) : keys.has(player.keys[side])) as Pair);
@@ -100,7 +105,7 @@ function setupState(): SetupState { return { offline: offlineStatus, canUpdate: 
 function switchState(): SwitchState {
   const complete = bindingsComplete();
   return {
-    players: settings.count, bindings, learning: calibrationTarget, complete, recovering,
+    players: settings.count, bindings, learning: calibrationTarget, complete, recovering, caps: settings.players.slice(0, settings.count).map(player => player.caps),
     message: calibration ? calibration.message : complete ? 'All switches are matched. Next, the crew checks them together.' : 'Choose a switch below, then press and release the one you want for it.',
   };
 }
@@ -108,7 +113,7 @@ function checkInState(): CheckInState {
   const pupils = settings.players.slice(0, settings.count);
   return {
     players: settings.count, mode, recovering,
-    keys: pupils.map(player => player.keys),
+    keys: pupils.map(player => player.keys), caps: pupils.map(player => player.caps),
     checked: tested.slice(0, settings.count),
     touched: pupils.map((_, i) => [tested[i][0] || pendingTests[i][0], tested[i][1] || pendingTests[i][1]] as Pair),
   };
@@ -118,8 +123,10 @@ function playState(): PlayState {
   const shown = settings.enlarged ? [current.active] : Array.from({ length: settings.count }, (_, i) => i);
   const resolved = settings.enlarged ? current.turns[current.active].outcome !== 'waiting' : ready(current);
   return {
-    players: shown.length, round: current.round, completed: current.history.length, stars: current.stars, ready: ready(current),
-    stations: shown.map(player => { const turn = current.turns[player]; return { player, question: turn.question, outcome: turn.outcome, attempts: turn.attempts, supported: turn.supported, picture: settings.players[player].quantities, paused }; }),
+    players: shown.length, spotlight: settings.enlarged,
+    rest: settings.enlarged ? Array.from({ length: settings.count }, (_, i) => i).filter(i => i !== current.active).map(player => ({ player, done: current.turns[player].outcome !== 'waiting' })) : [],
+    round: current.round, completed: current.history.length, stars: current.stars, ready: ready(current),
+    stations: shown.map(player => { const turn = current.turns[player]; return { player, question: turn.question, outcome: turn.outcome, attempts: turn.attempts, supported: turn.supported, picture: settings.players[player].quantities, paused, caps: settings.players[player].caps }; }),
     next: !resolved || boostRun.flow === 'running' ? null : boostRun.flow === 'waiting' ? 'Boost round!' : settings.enlarged && current.active < settings.count - 1 ? 'Next player' : current.round === 6 ? 'Finish journey' : 'Next round',
     destination: Math.max(destinationOf(current.round), boostRun.arrival ?? 0) as 0 | 1 | 2, perfect: current.turns.every(turn => turn.outcome === 'correct'),
     turn: settings.enlarged ? `Player ${current.active + 1} of ${settings.count}` : '',
@@ -174,7 +181,7 @@ function launch(): void {
   if (fresh) { random = seededRandom(Date.now()); session = createSession(presets(), random); readyRound = 0; boostRun.reset(); }
   paused = false; recovering = false; pauseReason = ''; flashes = ['', '', '', '']; resetInput(); enter('play');
   if (fresh) { events.emit('crewStart'); events.emit('roundStart', { round: 1 }); }
-  announce(missionAnnouncement());
+  if (fresh) beginTurn(); else announce(missionAnnouncement());
 }
 function perform(action: string): void {
   switch (action) {
@@ -218,7 +225,7 @@ function perform(action: string): void {
           }
           render();
         }
-        announce(session.finished ? `Mission complete. ${session.stars} crew stars collected.` : missionAnnouncement());
+        if (session.finished) announce(`Mission complete. ${session.stars} crew stars collected.`); else beginTurn();
       } return;
     // Another adventure keeps the setup and the learned switches; check-in proves they still work. Switches that have gone send the teacher back to switch setup.
     case 'replay':
@@ -361,17 +368,17 @@ function frame(now: number): void {
   requestAnimationFrame(frame);
 }
 const router = createRouter<'title' | 'setup' | 'switches' | 'checkin' | 'play' | 'finale'>(app, name => events.emit('screen', { name }));
-const play = createPlayScreen(playState, { quality: settings.quality, onBoostTap: player => { if (pulses[player]) pulses[player][0] = true; } });
+const play = createPlayScreen(playState, { quality: () => settings.quality, onBoostTap: player => { if (pulses[player]) pulses[player][0] = true; } });
 const boostRun = createBoostRun({
   settings, view: play.boost, calm: isCalm, announce, round: () => session?.round ?? 1, stars: () => session?.stars ?? 0,
   arrived: destination => { events.emit('destinationReached', { destination }); render(); },
   ended() { resetInput(); if (session && session.round === 6 && !session.finished) perform('next'); else render(); },
 });
-const finale = createFinaleScreen(finaleState, { quality: settings.quality });
+const finale = createFinaleScreen(finaleState, { quality: () => settings.quality });
 const setupScreen = createSetupScreen(setupState, { settings, mode: () => mode, setMode: next => { mode = next; }, refreshAudio: () => audio.refresh() });
 const switches = createSwitchScreen(switchState);
 const checkin = createCheckInScreen(checkInState);
-router.register('title', createTitleScreen({ quality: settings.quality, onSetup: () => enter('setup') }));
+router.register('title', createTitleScreen({ quality: () => settings.quality, onSetup: () => enter('setup') }));
 router.register('setup', setupScreen);
 router.register('switches', switches);
 router.register('checkin', checkin);

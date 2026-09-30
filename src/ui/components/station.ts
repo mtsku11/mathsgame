@@ -1,12 +1,13 @@
 import type { Question, Side } from '../../game/questions';
 import type { Turn } from '../../game/session';
 import { icons, shapeMarker } from '../art/icons';
+import type { CapColour } from '../art/caps';
 import { pilot, pilotColors, type PilotMood } from '../art/pilot';
 import { idle, kill } from '../fx/motion';
 import { createAnswerButton, type AnswerButton, type AnswerLook } from './answerButton';
 import { objectsMarkup, starSize, zones, type Geo } from './objects';
 
-export interface StationState { player: number; question: Question; outcome: Turn['outcome']; attempts: number; supported: boolean; picture: boolean; paused: boolean }
+export interface StationState { player: number; question: Question; outcome: Turn['outcome']; attempts: number; supported: boolean; picture: boolean; paused: boolean; caps: [CapColour, CapColour] }
 export interface StationParts { pilot: HTMLElement; objs: HTMLElement; buttons: [HTMLElement, HTMLElement] }
 export interface Station { el: HTMLElement; parts: StationParts; mount(parent: HTMLElement): void; update(state: StationState): void; press(side: Side): void; destroy(): void }
 
@@ -78,7 +79,7 @@ export function createStation(slot: number, geo: Geo): Station {
       pill.classList.toggle('gold', note === 'right');
       ([0, 1] as const).forEach(side => {
         const look: AnswerLook = outcome === 'correct' ? side === q.correct ? 'right' : 'dim' : outcome === 'passed' ? 'dim' : tried && side !== q.correct ? 'try' : state.paused ? 'idle' : 'ready';
-        buttons[side].update({ player, value: q.choices[side], picture: state.picture && q.kind === 'add', look, disabled: done || state.paused });
+        buttons[side].update({ player, value: q.choices[side], picture: state.picture && q.kind === 'add', look, disabled: done || state.paused, cap: state.caps[side] });
       });
       say.disabled = state.paused;
       help.disabled = pass.disabled = done || state.paused;

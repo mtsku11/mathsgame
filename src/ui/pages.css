@@ -464,3 +464,6 @@ font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 color:#E6E1FF;
 white-space:pre-wrap;
 overflow-wrap:anywhere}
+.sw-slot.has-cap .sw-cap{
+color:var(--cap-ink);
+background:radial-gradient(circle at 50% 38%,var(--cap-light) 0%,var(--cap) 48%,var(--cap-dark) 100%)}

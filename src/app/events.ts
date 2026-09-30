@@ -29,7 +29,8 @@ export interface GameEvents {
   crewReady: { player: number };
   // The teacher started the mission from check-in.
   crewStart: void;
-  sayQuestion: { player: number; question: Question };
+  // auto: read at the start of a Spotlight turn, so low stimulation silences it; the teacher's "Say it" is not auto.
+  sayQuestion: { player: number; question: Question; auto?: boolean };
   screen: { name: 'title' | 'setup' | 'switches' | 'checkin' | 'play' | 'finale' };
   gamePaused: void;
   gameResumed: void;

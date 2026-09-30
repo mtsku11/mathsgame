@@ -888,3 +888,49 @@ color:var(--dc,#FFE08A)}
 .sp-big .sp-card{
 width:260px;
 margin-left:-130px}
+.sp-spot.sp-g1 .sp-st{
+left:150px;
+width:810px}
+.sp-rests{
+position:absolute;
+left:12px;
+top:112px;
+width:112px;
+display:flex;
+flex-direction:column;
+align-items:center;
+gap:26px;
+pointer-events:none}
+.sp-rest{
+display:flex;
+flex-direction:column;
+align-items:center;
+gap:2px;
+opacity:.82}
+.sp-rest.is-done{
+opacity:1}
+.sp-rest-pilot svg{
+display:block;
+filter:drop-shadow(0 0 14px color-mix(in oklab,var(--c) 40%,transparent))}
+.sp-rest-name{
+display:flex;
+align-items:center;
+gap:5px;
+margin:0;
+font-size:16px;
+font-weight:800;
+line-height:1.2;
+color:var(--c)}
+.sp-rest-name i{
+line-height:0}
+.sp-btn.has-cap:not(.is-right),.sp-btn.has-cap:not(.is-right):hover:not(:disabled){
+background:radial-gradient(circle at 50% 38%,var(--cap-light) 0%,var(--cap) 48%,var(--cap-dark) 100%);
+color:var(--cap-ink);
+text-shadow:none}
+.sp-btn.has-cap:not(.is-right)::before{
+background:rgba(255,255,255,var(--cap-gloss))}
+.sp-btn.has-cap:not(.is-right) .sp-pic{
+fill:var(--cap-ink);
+stroke:var(--cap-ink)}
+.ck-cap.has-cap:not(.is-right) .sp-val{
+color:var(--cap-ink)}

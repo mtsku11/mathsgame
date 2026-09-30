@@ -37,7 +37,7 @@ describe('settings v2', () => {
     stored(v1(), 'number-crew-settings-v1');
     const loaded = loadSettings();
     expect(loaded).toMatchObject({ count: 4, autoAdvance: true, transitionSeconds: 7, enlarged: true, quiet: true, effectsVolume: 25, reduced: true, simple: true });
-    expect(loaded.players[0]).toEqual({ preset: 'add10', quantities: true, cooldown: 750, keys: ['KeyZ', 'KeyX'], boostPower: 1 });
+    expect(loaded.players[0]).toEqual({ preset: 'add10', quantities: true, cooldown: 750, keys: ['KeyZ', 'KeyX'], boostPower: 1, caps: ['pilot', 'pilot'] });
     expect(loaded.boost).toEqual(defaultSettings().boost);
     expect([loaded.musicVolume, loaded.narration, loaded.voiceVolume, loaded.lowStim, loaded.quality]).toEqual([50, true, 100, false, 'auto']);
     expect(store.has('number-crew-settings-v2')).toBe(false);
@@ -73,5 +73,21 @@ describe('settings v2', () => {
   it('accepts every allowed new value', () => {
     stored({ ...v1(), boost: { enabled: false, seconds: 8, difficulty: 'easy', autoStart: false }, musicVolume: 0, voiceVolume: 25, effectsVolume: 100, narration: false, lowStim: true, quality: 'low' });
     expect(loadSettings()).toMatchObject({ boost: { enabled: false, seconds: 8, difficulty: 'easy', autoStart: false }, musicVolume: 0, voiceVolume: 25, effectsVolume: 100, narration: false, lowStim: true, quality: 'low' });
+  });
+});
+
+describe('switch-cap colours in settings', () => {
+  it('round-trips, and an unknown colour falls back to the pilot colour', () => {
+    const settings = defaultSettings();
+    settings.players[0].caps = ['red', 'black'];
+    saveSettings(settings);
+    expect(loadSettings().players[0].caps).toEqual(['red', 'black']);
+    const saved = JSON.parse(store.get('number-crew-settings-v2')!);
+    saved.players[0].caps = ['magenta', 'blue'];
+    saved.players[1].caps = 'nonsense';
+    stored(saved);
+    const loaded = loadSettings();
+    expect(loaded.players[0].caps).toEqual(['pilot', 'blue']);
+    expect(loaded.players[1].caps).toEqual(['pilot', 'pilot']);
   });
 });

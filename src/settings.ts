@@ -1,9 +1,10 @@
 import type { Preset } from './game/questions';
+import { capIds, type CapColour } from './ui/art/caps';
 
 export type BoostPower = 1 | 2 | 3;
 export type BoostDifficulty = 'easy' | 'normal' | 'hard';
 export type Quality = 'auto' | 'high' | 'medium' | 'low';
-export interface PlayerSettings { preset: Preset; quantities: boolean; cooldown: number; keys: [string, string]; boostPower: BoostPower }
+export interface PlayerSettings { preset: Preset; quantities: boolean; cooldown: number; keys: [string, string]; boostPower: BoostPower; caps: [CapColour, CapColour] }
 export interface BoostSettings { enabled: boolean; seconds: 8 | 12 | 16 | 20; difficulty: BoostDifficulty; autoStart: boolean }
 export interface Settings {
   count: number; autoAdvance: boolean; transitionSeconds: number; enlarged: boolean; quiet: boolean; effectsVolume: number; reduced: boolean; simple: boolean;
@@ -12,10 +13,11 @@ export interface Settings {
 const KEY = 'number-crew-settings-v2';
 const LEGACY_KEY = 'number-crew-settings-v1';
 const VOLUMES = [0, 25, 50, 75, 100];
+const CAP_CHOICES: readonly CapColour[] = ['pilot', ...capIds];
 export const defaultSettings = (): Settings => ({ count: 2, autoAdvance: false, transitionSeconds: 4, enlarged: false, quiet: false, effectsVolume: 75,
   reduced: window.matchMedia('(prefers-reduced-motion: reduce)').matches, simple: false,
   boost: { enabled: true, seconds: 12, difficulty: 'normal', autoStart: true }, musicVolume: 50, narration: true, voiceVolume: 100, lowStim: false, quality: 'auto',
-  players: [['KeyF', 'KeyJ'], ['KeyA', 'KeyL'], ['KeyC', 'KeyM'], ['KeyQ', 'KeyP']].map(keys => ({ preset: 'count', quantities: false, cooldown: 500, keys: keys as [string, string], boostPower: 1 as BoostPower })) });
+  players: [['KeyF', 'KeyJ'], ['KeyA', 'KeyL'], ['KeyC', 'KeyM'], ['KeyQ', 'KeyP']].map(keys => ({ preset: 'count', quantities: false, cooldown: 500, keys: keys as [string, string], boostPower: 1 as BoostPower, caps: ['pilot', 'pilot'] as [CapColour, CapColour] })) });
 const pick = <T>(value: unknown, allowed: readonly T[], fallback: T): T => allowed.includes(value as T) ? value as T : fallback;
 const flag = (value: unknown, fallback: boolean): boolean => typeof value === 'boolean' ? value : fallback;
 function sanitize(saved: any, defaults: Settings): Settings {
@@ -43,6 +45,7 @@ function sanitize(saved: any, defaults: Settings): Settings {
     players: saved.players.map((player: any): PlayerSettings => ({
       preset: player.preset, quantities: player.quantities, cooldown: player.cooldown, keys: [player.keys[0], player.keys[1]],
       boostPower: pick(player.boostPower, [1, 2, 3] as const, 1),
+      caps: [pick(player.caps?.[0], CAP_CHOICES, 'pilot'), pick(player.caps?.[1], CAP_CHOICES, 'pilot')],
     })),
   };
 }

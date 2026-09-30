@@ -26,7 +26,7 @@ const seats: Record<number, [number, number][]> = {
 };
 const PILOT = 190;
 
-export function createFinaleScreen(source: () => FinaleState, options: { quality: Quality }): FinaleScreen {
+export function createFinaleScreen(source: () => FinaleState, options: { quality: () => Quality }): FinaleScreen {
   let stage: Stage | null = null;
   let root: HTMLElement | null = null;
   let context: ReturnType<typeof gsap.context> | null = null;
@@ -105,7 +105,7 @@ ${pilots}
       apply(state);
       root.querySelector<HTMLElement>('.sp-fin-title')!.focus({ preventScroll: true });
       context = gsap.context(() => play(state));
-      void initFx(options.quality, { maxResolution: particleResolution(), antialias: false }).then(app => app ? attachParticles(app, resolveQuality(options.quality)).then(() => { if (root) showers(); }) : undefined);
+      void initFx(options.quality(), { maxResolution: particleResolution(), antialias: false }).then(app => app ? attachParticles(app, resolveQuality(options.quality())).then(() => { if (root) showers(); }) : undefined);
     },
     update(state) { if (root) apply(state); },
     unmount() {

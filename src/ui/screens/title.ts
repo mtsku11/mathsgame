@@ -18,7 +18,7 @@ const place = (degrees: number): { x: number; y: number; depth: number } => {
   return { x: CENTRE.x + RADIUS.x * Math.cos(angle) - PILOT.w / 2, y: CENTRE.y + RADIUS.y * Math.sin(angle) - PILOT.h / 2, depth: Math.sin(angle) };
 };
 
-export function createTitleScreen(options: { quality: Quality; onSetup: () => void }): Screen {
+export function createTitleScreen(options: { quality: () => Quality; onSetup: () => void }): Screen {
   let stage: Stage | null = null;
   let tweens: gsap.core.Tween[] = [];
   return {
@@ -56,7 +56,7 @@ ${moods.map((mood, i) => { const at = place(START[i]); return `<div class="sp-tp
         tweens.push(gsap.from(stage.element.querySelector('.sp-lockup'), { y: -220, opacity: 0, duration: 1.1, ease: 'bounce.out' }));
         tweens.push(gsap.from(stage.element.querySelector('.sp-tship'), { scale: 0.6, opacity: 0, duration: 0.8, ease: 'back.out(1.8)', delay: 0.3 }));
       }
-      void initFx(options.quality);
+      void initFx(options.quality());
     },
     unmount() {
       tweens.forEach(tween => tween.kill());
