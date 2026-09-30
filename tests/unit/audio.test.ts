@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { Timed } from '../../src/audio/backend';
 import { hasVoice, music, sfx, useManifest, voice, type SfxId } from '../../src/audio/manifest';
 import {
-  BOOST_MUSIC_STEPS, DUCK_LEVEL, LOW_STIM_SFX, MAX_WAITING, OverlapLimiter, PRAISE, VoiceQueue, boostStep, correctRate, duckLevel, helpLines, musicAllowed, musicGain, nextPraise, pewRate,
+  BOOST_MUSIC_STEPS, DUCK_LEVEL, LOW_STIM_SFX, MAX_WAITING, OverlapLimiter, PRAISE, VoiceQueue, boostStep, correctRate, duckLevel, helpLines, helpSchedule, introLines, musicAllowed, musicGain, nextPraise, pewRate,
   questionLine, roundLine, sfxAllowed, sfxGain, shouldRetryLine, voiceAllowed, voiceGain, wantedMusic, welcomeLine, type AudioSettings, type VoiceRequest,
 } from '../../src/audio/rules';
 import { question } from '../../src/game/questions';
@@ -291,5 +291,34 @@ describe('pausable countdown', () => {
       vi.advanceTimersByTime(1000);
       expect(done).toBe(0);
     } finally { vi.useRealTimers(); }
+  });
+});
+
+describe('boost intro, help pacing and round flushing', () => {
+  const lengths: Record<string, number> = { boost_round: 600, theme_warp: 800, theme_fireworks: 1200, theme_bubble: 900, num_1: 1000, num_2: 2000, num_3: 500 };
+  const length = (id: string): number => lengths[id] ?? 0;
+  it('adds the theme line only when both intro lines finish before the countdown', () => {
+    expect(introLines('warpDrive', length, 1500)).toEqual(['boost_round', 'theme_warp']);
+    expect(introLines('bubbleBlast', length, 1500)).toEqual(['boost_round', 'theme_bubble']);
+    expect(introLines('bubbleBlast', length, 1499)).toEqual(['boost_round']);
+    expect(introLines('fireworkFrenzy', length, 1500)).toEqual(['boost_round']);
+    expect(introLines('warpDrive', length, 1400)).toEqual(['boost_round', 'theme_warp']);
+    expect(introLines('warpDrive', length, 1399)).toEqual(['boost_round']);
+    expect(introLines('unknown', length, 9999)).toEqual(['boost_round']);
+  });
+  it('starts each help number as the previous clip ends', () => {
+    expect(helpSchedule(['num_1', 'num_2', 'num_3'], length, 300, 30)).toEqual([300, 1330, 3360]);
+    expect(helpSchedule([], length, 300)).toEqual([]);
+  });
+  it('flushTag removes waiting lines of that tag only and leaves the playing line', () => {
+    const started: string[] = [], stopped: string[] = [];
+    const queue = new VoiceQueue({ start: request => started.push(request.id), stop: request => stopped.push(request.id) });
+    queue.request({ id: 'round_1', policy: 'queue', tag: 'round' }, 0);
+    queue.request({ id: 'all_stars', policy: 'queue', tag: 'round' }, 1);
+    queue.request({ id: 'welcome_candy_planet', policy: 'queue' }, 2);
+    queue.flushTag('round');
+    expect(queue.queued).toEqual(['welcome_candy_planet']);
+    expect(queue.current?.id).toBe('round_1');
+    expect(stopped).toEqual([]);
   });
 });

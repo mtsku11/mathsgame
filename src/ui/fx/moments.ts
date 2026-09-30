@@ -119,14 +119,19 @@ export function createMoments(targets: MomentTargets): Moments {
     });
   }
 
-  function helped(player: number): void {
+  // With the count spoken (narrated) each number pops when it is said, announced by helpCount; otherwise they all pop quickly. The numbers are in the DOM either way.
+  function helped(player: number, narrated: boolean): void {
     const current = station(player);
     if (!current || isCalm()) return;
     const badges = current.parts.objs.querySelectorAll('.sp-badge');
     run(() => {
       gsap.set(badges, { scale: 0 });
-      gsap.to(badges, { scale: 1, duration: 0.3, ease: 'back.out(2.6)', stagger: 0.11, delay: 0.05, clearProps: 'transform' });
+      if (!narrated) gsap.to(badges, { scale: 1, duration: 0.3, ease: 'back.out(2.6)', stagger: 0.11, delay: 0.05, clearProps: 'transform' });
     });
+  }
+  function counted(player: number, n: number): void {
+    const badge = station(player)?.parts.objs.querySelectorAll('.sp-badge')[n - 1];
+    if (badge && !isCalm()) run(() => { gsap.to(badge, { scale: 1, duration: 0.3, ease: 'back.out(2.6)', clearProps: 'transform' }); });
   }
 
   function passed(player: number): void {
@@ -179,7 +184,8 @@ export function createMoments(targets: MomentTargets): Moments {
   const subscriptions = [
     events.on('answerCorrect', ({ player, side }) => correct(player, side)),
     events.on('answerTry', ({ player, side }) => tried(player, side)),
-    events.on('turnHelped', ({ player }) => helped(player)),
+    events.on('turnHelped', ({ player, narrated }) => helped(player, narrated)),
+    events.on('helpCount', ({ player, n }) => counted(player, n)),
     events.on('turnPassed', ({ player }) => passed(player)),
     events.on('roundStart', dealIn),
     events.on('boostStart', flush),

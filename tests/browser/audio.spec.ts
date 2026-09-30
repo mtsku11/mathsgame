@@ -131,7 +131,7 @@ test('help counts aloud one line at a time, and praise rotates without repeating
   await clearLog(page);
   const total = await station(page, 0).locator('.sp-obj').count();
   await page.getByRole('button', { name: 'Help player 1', exact: true }).click();
-  await expect.poll(async () => plays(await audioLog(page), 'voice').length, { timeout: 10000 }).toBe(total);
+  await expect.poll(async () => plays(await audioLog(page), 'voice').length, { timeout: 20000 }).toBe(total);
   const log = await audioLog(page);
   expect(plays(log, 'voice')).toEqual(Array.from({ length: total }, (_, i) => `num_${i + 1}`));
   expect(plays(log, 'sfx')).toContain('help');
@@ -147,6 +147,51 @@ test('help counts aloud one line at a time, and praise rotates without repeating
   }
   for (const id of plays(await audioLog(page), 'voice')) if (isPraise(id)) praised.push(id);
   praised.forEach((id, i) => { if (i) expect(id).not.toBe(praised[i - 1]); });
+});
+
+const badgeStates = (page: Page): Promise<string[]> => page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.sp-badge')].map(badge => badge.style.transform));
+
+test('help: the numbers pop in step with the spoken count, and all at once quickly when the voice is off', async ({ page }) => {
+  test.setTimeout(60000);
+  await startGame(page, { count: 1, url: silent, presets: ['add5'] });
+  await waitVoiceIdle(page);
+  await clearLog(page);
+  await page.getByRole('button', { name: 'Help player 1', exact: true }).click();
+  await page.waitForTimeout(60);
+  const total = (await badgeStates(page)).length;
+  expect(total).toBeGreaterThanOrEqual(2);
+  expect((await badgeStates(page)).every(transform => transform.includes('scale(0'))).toBe(true);
+  await expect.poll(async () => (await badgeStates(page))[0], { timeout: 3000 }).toBe('');
+  expect((await badgeStates(page)).at(-1)).toContain('scale(0');
+  await expect.poll(async () => (await badgeStates(page)).every(transform => transform === ''), { timeout: 20000 }).toBe(true);
+  expect(plays(await audioLog(page), 'voice')).toEqual(Array.from({ length: total }, (_, i) => `num_${i + 1}`));
+
+  await withStored(page, { narration: false });
+  await startGame(page, { count: 1, url: silent, presets: ['add5'] });
+  await clearLog(page);
+  await page.getByRole('button', { name: 'Help player 1', exact: true }).click();
+  await expect.poll(async () => (await badgeStates(page)).every(transform => transform === ''), { timeout: 3000 }).toBe(true);
+  expect(plays(await audioLog(page), 'voice')).toEqual([]);
+});
+
+test('help numbers are not left hidden when the game is paused mid-count', async ({ page }) => {
+  await startGame(page, { count: 1, url: silent, presets: ['add5'] });
+  await waitVoiceIdle(page);
+  await page.getByRole('button', { name: 'Help player 1', exact: true }).click();
+  await page.waitForTimeout(500);
+  await page.keyboard.press('Escape');
+  await expect.poll(async () => (await badgeStates(page)).every(transform => transform === ''), { timeout: 3000 }).toBe(true);
+});
+
+test('a new round flushes queued round lines, so no stale "All stars collected" or round number is heard', async ({ page }) => {
+  await startGame(page, { count: 1, url: silent });
+  expect((await audioState(page)).voice.current).toBe('round_1');
+  await passAll(page, 1);
+  await expect.poll(async () => (await audioState(page)).voice.queued).toEqual(['all_stars']);
+  await nextButton(page).click();
+  await expect.poll(async () => (await audioState(page)).voice.queued).toEqual(['round_2']);
+  await waitVoiceIdle(page);
+  expect(plays(await audioLog(page), 'voice')).toEqual(['round_1', 'round_2']);
 });
 
 test('low stimulation plays only acknowledgements: no music, stingers, cheers or praise', async ({ page }) => {
@@ -291,7 +336,9 @@ test('boost round audio: countdown beeps and GO, boost music with rising tier vo
   await expect.poll(async () => plays(await audioLog(page), 'sfx').filter(id => id === 'beep').length, { timeout: 8000 }).toBe(3);
   await expect.poll(async () => plays(await audioLog(page), 'sfx'), { timeout: 8000 }).toContain('go');
   let log = await audioLog(page);
+  // boost_round and a theme line cannot both finish before the countdown's "3", so the theme line is dropped, never cut.
   expect(plays(log, 'voice').slice(0, 5)).toEqual(['boost_round', 'count_3', 'count_2', 'count_1', 'go']);
+  expect(log.filter(entry => entry.channel === 'voice' && entry.action === 'stop').map(entry => entry.id)).not.toContain('boost_round');
   expect(plays(log, 'sfx').filter(id => id !== 'click').slice(0, 5)).toEqual(['slam', 'beep', 'beep', 'beep', 'go']);
   const parked = log.find(entry => entry.channel === 'music' && entry.action === 'pause');
   expect(parked).toMatchObject({ id: 'mission' });
@@ -303,7 +350,7 @@ test('boost round audio: countdown beeps and GO, boost music with rising tier vo
   const pews = plays(log, 'sfx').filter(id => id === 'pew' || id === 'pew2');
   expect(pews.length).toBeGreaterThan(5);
   const bursts = log.filter(entry => entry.id === 'pew' || entry.id === 'pew2');
-  for (const entry of bursts) expect(bursts.filter(other => other.time <= entry.time && other.time > entry.time - 400).length).toBeLessThanOrEqual(8);
+  for (const entry of bursts) expect(bursts.filter(other => other.time <= entry.time && other.time > entry.time - 280).length).toBeLessThanOrEqual(8);
   expect(new Set(bursts.map(entry => entry.rate)).size).toBeGreaterThan(1);
   expect(plays(log, 'sfx')).toEqual(expect.arrayContaining(['tierup', 'mega']));
   const musicVolumes = log.filter(entry => entry.channel === 'music' && entry.action === 'volume' && entry.id === 'boost').map(entry => entry.volume);

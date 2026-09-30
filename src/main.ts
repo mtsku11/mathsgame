@@ -266,7 +266,7 @@ app.addEventListener('click', event => {
     const player = Number(button.dataset.help), turn = session.turns[player];
     const first = turn.outcome === 'waiting' && !turn.supported;
     turn.supported = true;
-    if (first) events.emit('turnHelped', { player, count: turn.question.groups.reduce((a, b) => a + b, 0) });
+    if (first) events.emit('turnHelped', { player, count: turn.question.groups.reduce((a, b) => a + b, 0), narrated: audio.narrating() });
     render(); announce(`Player ${player + 1}. Count together for help.`);
   }
   if (session && !paused && button.dataset.pass !== undefined) {

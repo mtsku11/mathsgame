@@ -1,10 +1,11 @@
 import { events } from '../app/events';
+import { COUNTDOWN_FROM_MS } from '../game/boost';
 import { isCalm } from '../ui/fx/motion';
 import { createSilentBackend, type Backend, type Handle } from './backend';
 import { createHowlerBackend } from './howler';
-import { hasVoice, loadManifest, sfx, spriteVolume, type MusicId, type SfxId } from './manifest';
+import { hasVoice, loadManifest, sfx, spriteVolume, voice, type MusicId, type SfxId } from './manifest';
 import {
-  DUCK_DOWN_MS, DUCK_UP_MS, OverlapLimiter, VoiceQueue, correctRate, helpLines, musicAllowed, musicGain, nextPraise, pewRate, questionLine, roundLine, sfxGain, shouldRetryLine,
+  DUCK_DOWN_MS, DUCK_UP_MS, OverlapLimiter, VoiceQueue, correctRate, helpLines, helpSchedule, introLines, musicAllowed, musicGain, nextPraise, pewRate, questionLine, roundLine, sfxGain, shouldRetryLine,
   stretchRate, voiceAllowed, voiceGain, welcomeLine, wantedMusic,
   type AudioSettings, type BoostMusic, type ScreenName, type VoicePolicy, type VoiceRequest,
 } from './rules';
@@ -25,6 +26,8 @@ export interface AudioLayer {
   refresh(): void;
   // Let the teacher hear a volume change: `voice` says a short line, `effects` plays the correct chime.
   preview(channel: 'voice' | 'effects'): void;
+  // The help count would be spoken right now (audio unlocked and loaded, narration audible).
+  narrating(): boolean;
 }
 
 const LOG_LIMIT = 600;
@@ -33,7 +36,6 @@ const BOOST_FADE_MS = 1500;
 const BED_FADE_MS = 600;
 const PRAISE_DELAY_MS = 120;
 const COUNT_FIRST_MS = 350;
-const COUNT_GAP_MS = 750;
 const PRESS_FAST_WAIT_MS = 2500;
 
 const silentRequested = (): boolean => window.__NC_TEST__ === true || /[?&](instant|silentaudio)\b/.test(location.search);
@@ -75,7 +77,15 @@ export function createAudio(settings: AudioSettings, backend: Backend = silentRe
     const timer = setTimeout(() => { timers.delete(timer); action(); }, ms);
     timers.set(timer, tag);
   };
+  // A help count in progress: every number not yet announced is announced at once when it is interrupted, so the on-screen numbers never wait on the voice.
+  let helpRun: { player: number; lines: string[]; next: number } | null = null;
+  function flushHelp(): void {
+    const run = helpRun;
+    helpRun = null;
+    if (run) for (let n = run.next + 1; n <= run.lines.length; n++) events.emit('helpCount', { player: run.player, n });
+  }
   const cancelTimers = (tag?: string): void => {
+    if (!tag || tag === 'help') flushHelp();
     for (const [timer, owner] of timers) if (!tag || owner === tag) { clearTimeout(timer); timers.delete(timer); }
   };
 
@@ -184,6 +194,7 @@ export function createAudio(settings: AudioSettings, backend: Backend = silentRe
     updateDuck();
   }
   const cue = (id: string): void => say(id, 'cut', { tag: 'boost' });
+  const length = (id: string): number => voice.sprite[id as never]?.[1] ?? 0;
 
   // ---- Unlock and lifecycle ----------------------------------------------------------------------------------------------------------------------------------
 
@@ -223,9 +234,10 @@ export function createAudio(settings: AudioSettings, backend: Backend = silentRe
   events.on('switchChecked', () => playSfx('boop'));
   events.on('roundStart', ({ round }) => {
     cancelTimers('praise');
+    queue.flushTag('round');
     if (round === 1) stars = 0;
     playSfx('deal');
-    say(roundLine(round), 'queue');
+    say(roundLine(round), 'queue', { tag: 'round' });
   });
   events.on('answerCorrect', () => {
     stars++;
@@ -243,16 +255,28 @@ export function createAudio(settings: AudioSettings, backend: Backend = silentRe
     triesSince++;
     if (shouldRetryLine(triesSince)) { triesSince = 0; say('another_go', 'drop'); }
   });
-  events.on('turnHelped', ({ count }) => {
+  events.on('turnHelped', ({ player, count, narrated }) => {
     playSfx('help');
     cancelTimers('help');
-    helpLines(count).forEach((line, i) => later(COUNT_FIRST_MS + i * COUNT_GAP_MS, 'help', () => say(line, 'replace', { tag: 'help' })));
+    const lines = helpLines(count);
+    const starts = helpSchedule(lines, length, COUNT_FIRST_MS);
+    const run = { player, lines, next: 0 };
+    if (narrated) helpRun = run;
+    const step = (i: number): void => {
+      if (narrated && helpRun !== run) return;
+      run.next = i + 1;
+      if (narrated) events.emit('helpCount', { player, n: i + 1 });
+      say(lines[i], 'replace', { tag: 'help' });
+      if (i + 1 < lines.length) later(starts[i + 1] - starts[i], 'help', () => step(i + 1));
+    };
+    if (lines.length) later(starts[0], 'help', () => step(0));
+    if (narrated && !lines.length) helpRun = null;
   });
   events.on('sayQuestion', ({ question }) => say(questionLine(question), 'replace', { tag: 'sayit', requested: true }));
   events.on('roundReady', () => {
     cancelTimers('praise');
     playJingle('jingle_round', true);
-    say('all_stars', 'queue');
+    say('all_stars', 'queue', { tag: 'round' });
   });
   events.on('destinationReached', ({ destination }) => {
     if (boost?.theme === 'warpDrive' && boost.finale) playSfx('warp_arrive');
@@ -273,7 +297,9 @@ export function createAudio(settings: AudioSettings, backend: Backend = silentRe
     boostMusic = 'live';
     boostTier = 0;
     playSfx('slam');
-    cue('boost_round');
+    const [first, ...rest] = introLines(theme, length, COUNTDOWN_FROM_MS);
+    cue(first);
+    rest.forEach(line => say(line, 'queue', { tag: 'boost' }));
     reconcile();
   });
   events.on('boostCount', ({ n }) => {
@@ -288,9 +314,11 @@ export function createAudio(settings: AudioSettings, backend: Backend = silentRe
   });
   events.on('boostPress', ({ player }) => {
     const now = performance.now();
-    if (pews.take(now, PEW_MS)) {
+    const pew = pewParity[player] ? 'pew2' : 'pew';
+    const rate = pewRate(player);
+    if (pews.take(now, Math.min(PEW_MS, sfx.sprite[pew][1] / rate))) {
       pewParity[player] = !pewParity[player];
-      playSfx(pewParity[player] ? 'pew' : 'pew2', { rate: pewRate(player), maxMs: PEW_MS });
+      playSfx(pew, { rate, maxMs: PEW_MS });
     }
     if (boost?.theme === 'fireworkFrenzy') {
       if (fireworks.take(now, 500)) {
@@ -376,6 +404,7 @@ export function createAudio(settings: AudioSettings, backend: Backend = silentRe
       updateDuck();
       reconcile();
     },
+    narrating: () => active() && voiceAllowed(settings) && hasVoice('num_1'),
     preview(channel) {
       if (channel === 'voice') say('ready', 'replace', { tag: 'sample', requested: true });
       else playSfx('correct');

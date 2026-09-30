@@ -51,6 +51,17 @@ export const shouldRetryLine = (triesSince: number): boolean => triesSince >= 3;
 export const questionLine = (question: { kind: 'count' | 'add'; groups: number[] }): string =>
   question.kind === 'count' ? 'how_many' : `add_${question.groups[0]}_${question.groups[1]}`;
 export const helpLines = (count: number): string[] => Array.from({ length: Math.min(10, Math.max(0, count)) }, (_, i) => `num_${i + 1}`);
+// The lines spoken as a boost round starts. The countdown's "3" cuts whatever is playing, so the theme line is only added when both lines finish before it.
+const THEME_LINES: Record<string, string> = { fireworkFrenzy: 'theme_fireworks', warpDrive: 'theme_warp', bubbleBlast: 'theme_bubble' };
+export function introLines(theme: string, duration: (id: string) => number, limitMs: number): string[] {
+  const theme_ = THEME_LINES[theme];
+  return theme_ && duration('boost_round') + duration(theme_) <= limitMs ? ['boost_round', theme_] : ['boost_round'];
+}
+// When each help number starts, counting from the first: each one begins as the previous clip ends, so no number is cut off.
+export function helpSchedule(lines: string[], duration: (id: string) => number, firstMs: number, gapMs = 30): number[] {
+  let at = firstMs;
+  return lines.map(line => { const start = at; at += duration(line) + gapMs; return start; });
+}
 export const roundLine = (round: number): string => `round_${round}`;
 export const welcomeLine = (destination: number): string => ['welcome_golden_rings', 'welcome_candy_planet', 'welcome_frosty_moon'][destination] ?? '';
 
@@ -121,6 +132,9 @@ export class VoiceQueue {
     this.waiting = this.waiting.filter(item => item.request.tag !== tag);
     if (this.current?.tag === tag) { this.stopCurrent(); this.advance(now); }
   }
+
+  // Drop waiting lines with this tag; whatever is playing carries on.
+  flushTag(tag: string): void { this.waiting = this.waiting.filter(item => item.request.tag !== tag); }
 
   // Forget what is waiting but let the line that is playing finish.
   flush(): void { this.waiting = []; }

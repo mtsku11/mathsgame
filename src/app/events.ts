@@ -6,7 +6,9 @@ export interface GameEvents {
   answerCorrect: { player: number; side: Side };
   answerTry: { player: number; side: Side };
   // count is how many objects the helper numbers run to.
-  turnHelped: { player: number; count: number };
+  // narrated: the count will be spoken, and helpCount marks each number as it is said.
+  turnHelped: { player: number; count: number; narrated: boolean };
+  helpCount: { player: number; n: number };
   turnPassed: { player: number };
   roundReady: { round: number };
   roundStart: { round: number };
