@@ -101,7 +101,7 @@ test('reduced motion: the star lands in the core at once with no flying element 
   await expect(first.locator('.sp-btn.is-right')).toHaveCount(1);
   await page.getByRole('button', { name: 'Pass player 2', exact: true }).click();
   await expect(page.locator('.sp-banner-card')).toBeVisible();
-  await expect(page.locator('.sp-banner-card')).toHaveText('All stars collected!');
+  await expect(page.locator('.sp-banner-card')).toHaveText('Round complete!');
   expect(await page.locator('.sp-banner-card').evaluate(element => getComputedStyle(element).transform)).toBe('none');
   expect(await flights(page)).toEqual([]);
   await expect(page.locator('.sp-fly')).toHaveCount(0);
@@ -285,13 +285,13 @@ test('arriveAt can be called on its own and does nothing once the play screen is
   expect(result).toEqual({ name: 'Frosty Moon', card: true });
 });
 
-test('round ready shows the All stars collected banner for about 2.5 s and the round pip fills', async ({ page }) => {
+test('round ready shows the Round complete banner for about 2.5 s when a turn was passed, and the round pip fills', async ({ page }) => {
   await startGame(page, { count: 2 });
   await answerCorrectly(page, 0);
   await page.getByRole('button', { name: 'Pass player 2', exact: true }).click();
   const started = Date.now();
   await expect(page.locator('.sp-banner-card')).toBeVisible();
-  await expect(page.locator('.sp-banner-card')).toHaveText('All stars collected!');
+  await expect(page.locator('.sp-banner-card')).toHaveText('Round complete!');
   await expect(page.locator('.sp-pip.is-earned')).toHaveCount(1);
   await expect(page.locator('.sp-pip.is-done')).toHaveCount(0);
   await expect(page.locator('.sp-banner')).toBeHidden({ timeout: 4000 });
@@ -366,4 +366,17 @@ test('finale reduced motion: static final scene, no confetti, total shown at onc
   expect(await particles(page, fx => fx.particleStats().spawned)).toBe(0);
   expect(await page.locator('.sp-fin-bob').evaluateAll(elements => elements.every(element => getComputedStyle(element).transform === 'none'))).toBe(true);
   await expect(page.locator('.sp-fin-title')).toHaveCSS('opacity', '1');
+});
+
+test('the banner says All stars collected! only when every turn was correct, and sits above the stations', async ({ page }) => {
+  await startGame(page, { count: 4 });
+  for (let index = 0; index < 4; index++) await answerCorrectly(page, index);
+  const card = page.locator('.sp-banner-card');
+  await expect(card).toHaveText('All stars collected!');
+  await expect(card).toBeVisible();
+  // Layout position, not the animated box: the card sits in the band above the first station.
+  const layout = await page.evaluate(() => { const banner = document.querySelector<HTMLElement>('.sp-banner')!, first = document.querySelector<HTMLElement>('.sp-st')!; return { bottom: banner.offsetTop + banner.offsetHeight, top: banner.offsetTop, stationTop: first.offsetTop }; });
+  expect(layout.top).toBeGreaterThanOrEqual(0);
+  expect(layout.bottom).toBeLessThanOrEqual(layout.stationTop);
+  await expect(page.locator('.sp-banner')).toBeHidden({ timeout: 4000 });
 });

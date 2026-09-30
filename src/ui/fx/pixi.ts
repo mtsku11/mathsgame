@@ -1,3 +1,4 @@
+import { gsap } from 'gsap';
 import type { Application } from 'pixi.js';
 import type { Quality } from '../../settings';
 import { isInstant, isLowStim } from './motion';
@@ -20,6 +21,14 @@ let pending: Promise<Application | null> | null = null;
 let generation = 0;
 let warned = false;
 export const getFx = (): Application | null => app;
+
+// Everything that draws (particles, boost scenes) asks for a render instead of calling app.render(), so one frame costs one render however many of them changed.
+let renderScheduled = false;
+export function requestRender(): void {
+  if (renderScheduled || !app) return;
+  renderScheduled = true;
+  gsap.ticker.add(() => { renderScheduled = false; app?.render(); }, true);
+}
 
 function unavailable(error: unknown): null {
   if (!warned) { warned = true; console.warn('Effects layer unavailable; continuing without it.', error); }

@@ -2,7 +2,7 @@ import { gsap } from 'gsap';
 import type { Application, Particle, ParticleContainer } from 'pixi.js';
 import { ATLAS_SIZE, atlasFrames, atlasSvg } from '../art/particles';
 import { isInstant, isLowStim, isReduced } from './motion';
-import { getFx, particleBudget, qualityLevels, type QualityLevel } from './pixi';
+import { getFx, particleBudget, qualityLevels, requestRender, type QualityLevel } from './pixi';
 import { ParticleSim, SHAPES, between, type EmitterSpec, type ParticleShape, type ParticleSpec, type Range } from './particleSim';
 
 export const gold = [0xFFD23F, 0xFFE58A, 0xFFFFFF];
@@ -82,7 +82,7 @@ export function rain(options: ShowerOptions = {}): void {
   shower(options, ['sparkle', 'dot', 'star'], { fall: [50, 130], size: [10, 20], gravity: 60, flutter: false, colours: gold });
 }
 
-export function clearParticles(): void { sim?.clear(); if (attached) { attached.container.particleChildren.length = 0; attached.app.render(); } }
+export function clearParticles(): void { sim?.clear(); if (attached) { attached.container.particleChildren.length = 0; requestRender(); } }
 
 function rasterise(): Promise<HTMLCanvasElement> {
   atlas ??= (async () => {
@@ -135,7 +135,7 @@ export async function attachParticles(app: Application, quality: QualityLevel): 
         p.rotation = sim.rotation[i];
         p.color = (sim.bgr[i] + ((sim.alphaAt(i) * 255 | 0) << 24)) >>> 0;
       }
-      app.render();
+      requestRender();
     };
     attached = { app, container, pool, textures, tick };
     gsap.ticker.add(tick);

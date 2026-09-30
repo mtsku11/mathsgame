@@ -862,3 +862,15 @@ text-align:center}
 .top-meta .status-dot{
 display:none}
 }
+
+.boost-settings{
+margin:18px 0 8px;
+padding-top:16px;
+border-top:1px solid var(--line)}
+.boost-settings>.muted{
+font-size:12px;
+margin:0 0 14px}
+.boost-settings .form-row{
+margin-bottom:12px}
+.boost-settings input{
+accent-color:var(--teal)}

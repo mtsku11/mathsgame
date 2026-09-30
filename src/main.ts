@@ -4,9 +4,10 @@ import '@fontsource/baloo-2/latin-700.css';
 import '@fontsource/baloo-2/latin-800.css';
 import './style.css';
 import './ui/theme.css';
-import { loadSettings, saveSettings } from './settings';
+import { loadSettings, saveSettings, type BoostPower, type BoostSettings } from './settings';
 import { seededRandom, type Preset, type Side } from './game/questions';
 import { createSession, answer, advance, pass, ready, type Session } from './game/session';
+import { createBoostRun } from './app/boostRun';
 import { InputFilter, type Pair } from './input/normalize';
 import { Calibration, ConnectionHistory, describeDevice, readDevices, down, type Binding, type Device } from './input/gamepad';
 import { marker, markers, rocket, planet } from './ui/art';
@@ -20,7 +21,7 @@ import { createFinaleScreen, type FinaleState } from './ui/screens/finale';
 import { createPlayScreen, type PlayState } from './ui/screens/play';
 import * as arrive from './ui/fx/arrive';
 import * as motion from './ui/fx/motion';
-import { setLowStim, setReducedMotion } from './ui/fx/motion';
+import { isCalm, setLowStim, setReducedMotion } from './ui/fx/motion';
 import * as particles from './ui/fx/particles';
 import * as pixi from './ui/fx/pixi';
 
@@ -62,6 +63,7 @@ const transition = new TransitionTimer();
 let audio: AudioContext | null = null;
 let lastDiagnostic = '';
 let readyRound = 0;
+let lastFrame = 0;
 const connectionHistory = new ConnectionHistory();
 
 function emptyPairs(): Pair[] { return Array.from({ length: 4 }, () => [false, false]); }
@@ -74,9 +76,13 @@ const selected = (value: boolean): string => value ? 'selected' : '';
 function resetInput(): void { filter.reset(); pulses = emptyPairs(); }
 // Fires once per round, the first time every station has an outcome.
 function noteReady(): void {
-  if (session && !session.finished && ready(session) && readyRound !== session.round) { readyRound = session.round; events.emit('roundReady', { round: session.round }); }
+  if (session && !session.finished && ready(session) && readyRound !== session.round) { readyRound = session.round; boostRun.ready(); events.emit('roundReady', { round: session.round }); }
 }
 function announce(message: string): void { announcer.textContent = message; }
+// What every switch is doing right now: keyboard keys or the learned controller buttons.
+function readRaw(): Pair[] {
+  return settings.players.map((player, i) => [0, 1].map(side => mode === 'controller' ? down(bindings[i][side], devices) : keys.has(player.keys[side])) as Pair);
+}
 function missionAnnouncement(): string {
   if (!session) return '';
   if (!settings.enlarged) return `Round ${session.round} of 6. New questions for ${settings.count === 1 ? 'the player' : `all ${settings.count} players`}.`;
@@ -103,6 +109,13 @@ function enableAudio(): void {
 function volumeControl(): string {
   return `<label>Effects volume<select id="effects-volume" aria-describedby="volume-note">${[0, 25, 50, 75, 100].map(value => `<option value="${value}" ${selected(settings.effectsVolume === value)}>${value === 0 ? 'Off' : `${value}%`}</option>`).join('')}</select></label><p id="volume-note" class="muted">Quiet mode mutes effects at every volume.</p>`;
 }
+function boostSettings(): string {
+  const { boost } = settings;
+  return `<fieldset class="boost-settings"><legend>Boost rounds</legend><p class="muted">After each maths round the crew presses their switches as fast as they can to power something amazing. It cannot be failed, and the maths itself stays untimed.</p>
+  <div class="form-row"><label><input id="boost-enabled" type="checkbox" ${checked(boost.enabled)}> Boost round after every maths round</label><label><input id="boost-auto" type="checkbox" ${checked(boost.autoStart)}> Start each boost round automatically</label></div>
+  <div class="form-row"><label>Boost length<select id="boost-seconds">${[8, 12, 16, 20].map(n => `<option value="${n}" ${selected(boost.seconds === n)}>${n} seconds</option>`).join('')}</select></label><label>Boost difficulty<select id="boost-difficulty">${(['easy', 'normal', 'hard'] as const).map(level => `<option value="${level}" ${selected(boost.difficulty === level)}>${level[0].toUpperCase()}${level.slice(1)}</option>`).join('')}</select></label></div>
+  <div class="crew-settings">${settings.players.slice(0, settings.count).map((player, i) => `<div class="crew-row station-${i}"><span class="station-badge">${marker(i)}</span><label for="power-${i}">Player ${i + 1} boost power<small>Each press counts for more</small></label><select id="power-${i}" data-boost-power="${i}">${([1, 2, 3] as const).map(n => `<option value="${n}" ${selected(player.boostPower === n)}>×${n}</option>`).join('')}</select></div>`).join('')}</div></fieldset>`;
+}
 function header(): string {
   return `<header class="topbar"><a href="#" data-action="home" class="brand" aria-label="Number Crew home"><span class="brand-icon">${marker(3)}</span><span>NUMBER <strong>CREW</strong></span></a><div class="top-meta"><span class="status-dot"></span><span id="offline-status">${offlineStatus}</span><span class="tag">CLASSROOM EDITION</span></div></header>`;
 }
@@ -112,7 +125,7 @@ function setup(): string {
   <div class="form-row"><label>Crew size<select id="crew-count">${[1, 2, 3, 4].map(n => `<option value="${n}" ${selected(settings.count === n)}>${players(n)}</option>`).join('')}</select></label><label>Screen layout<select id="layout"><option value="together" ${selected(!settings.enlarged)}>Play together</option><option value="enlarged" ${selected(settings.enlarged)}>Enlarged turns</option></select></label></div>
   <div class="crew-settings">${settings.players.slice(0, settings.count).map((player, i) => `<div class="crew-row station-${i}"><span class="station-badge">${marker(i)}</span><label for="preset-${i}">Player ${i + 1}<small>${markers[i]} station</small></label><select id="preset-${i}" data-preset="${i}" aria-label="Player ${i + 1} maths"><option value="count" ${selected(player.preset === 'count')}>Count 1–5</option><option value="add5" ${selected(player.preset === 'add5')}>Add within 5</option><option value="add10" ${selected(player.preset === 'add10')}>Add within 10</option></select></div>`).join('')}</div>
   <fieldset class="input-choice"><legend>How will the crew answer?</legend><label><input type="radio" name="input-mode" value="controller" ${checked(mode === 'controller')}> Xbox Adaptive Controller <small>One shared controller · 2 switches per player</small></label><label><input type="radio" name="input-mode" value="keyboard" ${checked(mode === 'keyboard')}> Keyboard &amp; on-screen buttons <small>Try the game without a controller</small></label></fieldset>
-  <div class="form-row"><label><input id="auto-advance" type="checkbox" ${checked(settings.autoAdvance)}> Advance completed rounds automatically</label><label>Celebration delay<select id="transition-seconds">${Array.from({ length: 9 }, (_, i) => i + 2).map(n => `<option value="${n}" ${selected(settings.transitionSeconds === n)}>${n} seconds</option>`).join('')}</select></label></div><details class="access-settings"><summary>Comfort &amp; access settings</summary><div class="checks"><label><input id="quiet" type="checkbox" ${checked(settings.quiet)}> Quiet mode</label><label><input id="reduced" type="checkbox" ${checked(settings.reduced)}> Reduce motion</label><label><input id="simple" type="checkbox" ${checked(settings.simple)}> Less decoration</label></div>${volumeControl()}${settings.players.slice(0, settings.count).map((player, i) => `<fieldset><legend>Player ${i + 1}</legend><label><input type="checkbox" data-quantity="${i}" ${checked(player.quantities)}> Picture answers for addition</label><label>Input cooldown<select data-cooldown="${i}">${[0, 250, 500, 750, 1000, 1500].map(n => `<option value="${n}" ${selected(player.cooldown === n)}>${n} ms</option>`).join('')}</select></label><div class="form-row">${player.keys.map((key, side) => `<label>${side ? 'Right' : 'Left'} keyboard key<select aria-label="Player ${i + 1} ${side ? 'right' : 'left'} key" data-key-player="${i}" data-key-side="${side}">${'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(letter => `<option value="Key${letter}" ${selected(key === `Key${letter}`)}>${letter}</option>`).join('')}</select></label>`).join('')}</div></fieldset>`).join('')}</details>
+  <div class="form-row"><label><input id="auto-advance" type="checkbox" ${checked(settings.autoAdvance)}> Advance completed rounds automatically</label><label>Celebration delay<select id="transition-seconds">${Array.from({ length: 9 }, (_, i) => i + 2).map(n => `<option value="${n}" ${selected(settings.transitionSeconds === n)}>${n} seconds</option>`).join('')}</select></label></div>${boostSettings()}<details class="access-settings"><summary>Comfort &amp; access settings</summary><div class="checks"><label><input id="quiet" type="checkbox" ${checked(settings.quiet)}> Quiet mode</label><label><input id="reduced" type="checkbox" ${checked(settings.reduced)}> Reduce motion</label><label><input id="simple" type="checkbox" ${checked(settings.simple)}> Less decoration</label></div>${volumeControl()}${settings.players.slice(0, settings.count).map((player, i) => `<fieldset><legend>Player ${i + 1}</legend><label><input type="checkbox" data-quantity="${i}" ${checked(player.quantities)}> Picture answers for addition</label><label>Input cooldown<select data-cooldown="${i}">${[0, 250, 500, 750, 1000, 1500].map(n => `<option value="${n}" ${selected(player.cooldown === n)}>${n} ms</option>`).join('')}</select></label><div class="form-row">${player.keys.map((key, side) => `<label>${side ? 'Right' : 'Left'} keyboard key<select aria-label="Player ${i + 1} ${side ? 'right' : 'left'} key" data-key-player="${i}" data-key-side="${side}">${'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(letter => `<option value="Key${letter}" ${selected(key === `Key${letter}`)}>${letter}</option>`).join('')}</select></label>`).join('')}</div></fieldset>`).join('')}</details>
   <p class="notice" role="status">${escape(notice)}</p><button class="primary full" data-action="prepare">${mode === 'controller' ? 'Set up the switches' : 'Enter practice'} <span aria-hidden="true">→</span></button><p class="footnote">Teacher-led · 6 rounds · No names or accounts</p></section></main>`;
 }
 function controls(): string {
@@ -144,9 +157,10 @@ function playState(): PlayState {
   return {
     players: shown.length, round: current.round, completed: current.history.length, stars: current.stars, ready: ready(current),
     stations: shown.map(player => { const turn = current.turns[player]; return { player, question: turn.question, outcome: turn.outcome, attempts: turn.attempts, supported: turn.supported, picture: settings.players[player].quantities, paused }; }),
-    next: resolved ? settings.enlarged && current.active < settings.count - 1 ? 'Next player' : current.round === 6 ? 'Finish journey' : 'Next round' : null,
+    next: !resolved || boostRun.flow === 'running' ? null : boostRun.flow === 'waiting' ? 'Boost round!' : settings.enlarged && current.active < settings.count - 1 ? 'Next player' : current.round === 6 ? 'Finish journey' : 'Next round',
+    destination: Math.max(destinationOf(current.round), boostRun.arrival ?? 0) as 0 | 1 | 2, perfect: current.turns.every(turn => turn.outcome === 'correct'),
     turn: settings.enlarged ? `Player ${current.active + 1} of ${settings.count}` : '',
-    pause: { paused, reason: pauseReason, recovering, quiet: settings.quiet, volume: settings.effectsVolume },
+    pause: { paused, reason: pauseReason, recovering, quiet: settings.quiet, volume: settings.effectsVolume, boost: boostRun.flow === 'running' },
   };
 }
 function finaleState(): FinaleState {
@@ -184,7 +198,7 @@ function updateDiagnostics(): void {
 }
 function pause(reason = ''): void {
   if (screen !== 'play' || paused) return;
-  paused = true; transition.suspend(); pauseReason = reason; resetInput(); render();
+  paused = true; transition.suspend(); pauseReason = reason; resetInput(); boostRun.pause(performance.now()); render();
 }
 function enter(next: View): void {
   screen = next;
@@ -195,7 +209,7 @@ function preparePractice(): void {
   paused = false; tested = emptyPairs(); pendingTests = emptyPairs(); flashes = ['', '', '', '']; calibration = null; resetInput(); enter('practice');
 }
 function newJourneySetup(): void {
-  session = null; recovering = false; paused = false; bindings = emptyBindings(); transition.reset();
+  session = null; recovering = false; paused = false; bindings = emptyBindings(); transition.reset(); boostRun.reset();
   filter = new InputFilter(settings.players.map(player => player.cooldown));
   if (mode === 'controller') enter('controls'); else preparePractice();
 }
@@ -203,35 +217,42 @@ function perform(action: string): void {
   switch (action) {
     case 'home': if (screen === 'play') pause(); else if (!recovering) { session = null; enter('setup'); } return;
     case 'prepare': notice = saveSettings(settings) ? '' : 'Preferences cannot be saved in this browser; this session will still work.'; enableAudio(); newJourneySetup(); return;
-    case 'setup': session = null; paused = false; recovering = false; calibration = null; resetInput(); enter('setup'); return;
+    case 'setup': session = null; paused = false; recovering = false; calibration = null; boostRun.reset(); resetInput(); enter('setup'); return;
     case 'controls': calibration = null; enter('controls'); return;
     case 'clear-bindings': bindings = emptyBindings(); calibration = null; calibrationTarget = null; render(); return;
     case 'practice': preparePractice(); return;
     case 'start':
       if (mode === 'controller' && !tested.slice(0, settings.count).every(pair => pair.every(Boolean))) return;
       const fresh = !recovering;
-      if (fresh) { random = seededRandom(Date.now()); session = createSession(presets(), random); readyRound = 0; }
+      if (fresh) { random = seededRandom(Date.now()); session = createSession(presets(), random); readyRound = 0; boostRun.reset(); }
       paused = false; recovering = false; pauseReason = ''; flashes = ['', '', '', '']; resetInput(); enter('play');
       if (fresh) events.emit('roundStart', { round: 1 });
       announce(missionAnnouncement()); return;
     case 'pause': pause(); return;
     case 'resume':
-      paused = false; pauseReason = ''; resetInput(); render();
-      app.querySelector<HTMLElement>('[data-action="pause"]')?.focus();
+      paused = false; pauseReason = ''; resetInput(); boostRun.resume(performance.now(), readRaw()); render();
+      (app.querySelector<HTMLElement>('.sp-boost-pause') ?? app.querySelector<HTMLElement>('[data-action="pause"]'))?.focus();
       announce(missionAnnouncement());
       return;
     case 'pause-back': paused = true; enter('play'); return;
-    case 'reconnect': bindings = emptyBindings(); calibration = null; enter('controls'); return;
+    case 'reconnect': bindings = emptyBindings(); calibration = null; boostRun.interrupt(); enter('controls'); return;
+    case 'skip-boost':
+      if (boostRun.flow !== 'running') return;
+      paused = false; pauseReason = ''; boostRun.skip(); resetInput(); render(); return;
     case 'next':
       if (session && !paused) {
+        if (boostRun.flow === 'waiting') { boostRun.start(readRaw(), performance.now()); render(); return; }
+        if (boostRun.flow === 'running') { if (boostRun.phase === 'finale') { boostRun.skip(); resetInput(); render(); } return; }
         const from = session.round;
+        const reached = boostRun.arrival;
         if (!advance(session, presets(), random, settings.enlarged)) return;
         transition.reset(); flashes = ['', '', '', '']; resetInput();
         if (session.finished) { sound(); enter('results'); events.emit('missionComplete', { stars: session.stars }); }
         else {
           if (session.round !== from) {
+            boostRun.newRound();
             events.emit('roundStart', { round: session.round });
-            if (destinationOf(session.round) !== destinationOf(from)) events.emit('destinationReached', { destination: destinationOf(session.round) });
+            if (destinationOf(session.round) !== destinationOf(from) && reached !== destinationOf(session.round)) events.emit('destinationReached', { destination: destinationOf(session.round) });
           }
           render();
         }
@@ -272,6 +293,11 @@ app.addEventListener('change', event => {
   if (target.id === 'auto-advance') settings.autoAdvance = target.checked;
   if (target.id === 'transition-seconds') settings.transitionSeconds = Number(target.value);
   if (target.id === 'layout') settings.enlarged = target.value === 'enlarged';
+  if (target.id === 'boost-enabled') settings.boost.enabled = target.checked;
+  if (target.id === 'boost-auto') settings.boost.autoStart = target.checked;
+  if (target.id === 'boost-seconds') settings.boost.seconds = Number(target.value) as BoostSettings['seconds'];
+  if (target.id === 'boost-difficulty') settings.boost.difficulty = target.value as BoostSettings['difficulty'];
+  if (target.dataset.boostPower !== undefined) settings.players[Number(target.dataset.boostPower)].boostPower = Number(target.value) as BoostPower;
   if (target.name === 'input-mode') { mode = target.value as typeof mode; render(); }
   if (target.dataset.preset !== undefined) settings.players[Number(target.dataset.preset)].preset = target.value as Preset;
   if (target.dataset.quantity !== undefined) settings.players[Number(target.dataset.quantity)].quantities = target.checked;
@@ -296,10 +322,12 @@ window.addEventListener('keydown', event => {
     else if (!event.shiftKey && document.activeElement === focusable.at(-1)) { event.preventDefault(); focusable[0].focus(); }
   }
   if (event.key === 'Escape' && screen === 'play') { pause(); return; }
-  if (screen === 'play' && !paused && !event.repeat && !event.ctrlKey && !event.metaKey && !event.altKey) {
+  // While a boost is counting down or live, Enter and N do nothing, so a focused saucer button still activates on Enter and no key can skip the boost by accident.
+  const boostBusy = boostRun.flow === 'running' && boostRun.phase !== 'finale';
+  if (screen === 'play' && !paused && !boostBusy && !event.repeat && !event.ctrlKey && !event.metaKey && !event.altKey) {
     // Enter always means Next once it is offered, even with a button focused; N is free unless a pupil uses that key.
     const typing = event.target instanceof Element && !!event.target.closest('a, select, input, textarea, summary');
-    const enter = event.key === 'Enter' && !typing && !!session && (settings.enlarged ? session.turns[session.active].outcome !== 'waiting' : ready(session));
+    const enter = event.key === 'Enter' && !typing && !!session && (boostRun.flow === 'running' || (settings.enlarged ? session.turns[session.active].outcome !== 'waiting' : ready(session)));
     const letter = event.code === 'KeyN' && !typing && !(mode === 'keyboard' && settings.players.slice(0, settings.count).some(player => player.keys.includes('KeyN')));
     if (enter || letter) { event.preventDefault(); perform('next'); return; }
   }
@@ -336,9 +364,12 @@ function frame(now: number): void {
       if (binding) { bindings[calibrationTarget[0]][calibrationTarget[1]] = binding; calibration = null; calibrationTarget = null; render(); }
     }
   }
-  const raw: Pair[] = settings.players.map((player, i) => [0, 1].map(side => mode === 'controller' ? down(bindings[i][side], devices) : keys.has(player.keys[side])) as Pair);
+  const dt = Math.min(100, Math.max(0, now - lastFrame));
+  lastFrame = now;
+  const raw = readRaw();
   const states: Pair[] = raw.map((pair, i) => pair.map((active, side) => active || pulses[i][side]) as Pair);
-  const actions = filter.sample(states, now);
+  const boosting = boostRun.flow === 'running';
+  const actions = boosting ? [] : filter.sample(states, now);
   pulses = emptyPairs();
   let changed = false;
   const announcements: string[] = [];
@@ -363,13 +394,19 @@ function frame(now: number): void {
     }
   }
   noteReady();
-  const completed = !!session && !session.finished && ready(session);
+  boostRun.frame(states, now, dt, screen === 'play' && !paused && !document.hidden);
+  const completed = !!session && !session.finished && ready(session) && boostRun.flow !== 'waiting' && boostRun.flow !== 'running';
   if (transition.sample(now, settings.autoAdvance && completed, screen === 'play' && !paused && !document.hidden, settings.transitionSeconds * 1000)) perform('next');
   if (changed) { render(); if (announcements.length) announce(announcements.join(' ')); }
   requestAnimationFrame(frame);
 }
 const router = createRouter<'title' | 'legacy' | 'play' | 'finale'>(app);
-const play = createPlayScreen(playState, { quality: settings.quality });
+const play = createPlayScreen(playState, { quality: settings.quality, onBoostTap: player => { if (pulses[player]) pulses[player][0] = true; } });
+const boostRun = createBoostRun({
+  settings, view: play.boost, calm: isCalm, announce, round: () => session?.round ?? 1, stars: () => session?.stars ?? 0,
+  arrived: destination => { events.emit('destinationReached', { destination }); render(); },
+  ended() { resetInput(); if (session && session.round === 6 && !session.finished) perform('next'); else render(); },
+});
 const finale = createFinaleScreen(finaleState, { quality: settings.quality });
 const legacy: Screen = { mount() { legacyActive = true; render(); }, unmount() { legacyActive = false; } };
 router.register('title', createTitleScreen({ quality: settings.quality, onSetup: () => router.go('legacy') }));
@@ -391,4 +428,4 @@ registerOffline((status, update) => {
 });
 requestAnimationFrame(frame);
 // Dev-server tests reach the running module instances here; the dev server can serve one module under two URLs, so importing them from the page is not reliable.
-if (import.meta.env.DEV) Object.assign(window, { __nc: { events, motion, particles, pixi, arrive } });
+if (import.meta.env.DEV) Object.assign(window, { __nc: { events, motion, particles, pixi, arrive, boost: boostRun } });

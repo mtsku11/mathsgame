@@ -115,7 +115,7 @@ export function createHub(options: { players: number; geo: Geo }): Hub {
       turn.hidden = !state.turn;
       turn.textContent = state.turn;
       next.hidden = state.next === null;
-      if (state.next !== null && nextLabel.textContent !== state.next) nextLabel.textContent = state.next;
+      if (state.next !== null && nextLabel.textContent !== state.next) { nextLabel.textContent = state.next; next.classList.toggle('is-long', state.next.length > 11); }
       paths.forEach(path => {
         const target = state.slots[Number(path.dataset.slot)];
         if (target) path.setAttribute('class', `sp-beam sp-p${target.player}${target.done ? ' is-done' : ''}`);

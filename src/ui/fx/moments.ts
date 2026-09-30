@@ -15,6 +15,8 @@ export interface MomentTargets {
   slotOf: (player: number) => number;
   hub: Hub;
   banner: Banner;
+  // True when every station in the round earned its star, so the banner may say so; a passed or helped-only turn gets the plain wording.
+  perfect: () => boolean;
 }
 export interface Moments { flush(): void; destroy(): void }
 
@@ -157,7 +159,7 @@ export function createMoments(targets: MomentTargets): Moments {
     const pip = hub.parts.pips[round - 1];
     burst(core.x, core.y, { count: 44, size: [16, 30], speed: [220, 470], life: [0.7, 1.2] });
     if (pip) { const at = stagePoint(pip); burst(at.x, at.y, { count: 12, size: [8, 14], speed: [60, 150], life: [0.4, 0.8] }); }
-    banner.show('All stars collected!');
+    banner.show(targets.perfect() ? 'All stars collected!' : 'Round complete!');
     if (isCalm()) {
       gsap.set(banner.card, { clearProps: 'all' });
       after(BANNER_SECONDS, () => banner.hide());
@@ -179,6 +181,7 @@ export function createMoments(targets: MomentTargets): Moments {
     events.on('turnHelped', ({ player }) => helped(player)),
     events.on('turnPassed', ({ player }) => passed(player)),
     events.on('roundStart', dealIn),
+    events.on('boostStart', flush),
     events.on('roundReady', ({ round }) => whenSettled(() => celebrate(round))),
     events.on('destinationReached', ({ destination }) => arriveAt(destination)),
   ];
