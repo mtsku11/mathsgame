@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { boostFlow, boostPhase, correctSide, mash, nextButton, passAll, startGame, station, tapKey } from '../helpers';
+import { boostFlow, boostPhase, correctSide, mash, nextButton, passAll, skipToRound, startGame, station, tapKey } from '../helpers';
 
 test.use({ launchOptions: { args: ['--disable-gpu', '--disable-3d-apis', '--disable-webgl', '--disable-webgl2'] } });
 
@@ -44,3 +44,25 @@ test('without WebGL a Warp Drive boost still plays to MAX and arrives, with the 
   await expect(nextButton(page)).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+// Phase 3b: without an effects layer the new themes fall back to the same static shapes the calm modes use.
+for (const theme of [{ name: 'Firework Frenzy', round: 1, card: '.sp-bgiant.is-firework', still: '.sp-fw-static use' }, { name: 'Bubble Blast', round: 3, card: '.sp-bgiant.is-pop', still: '.sp-bb-cluster-wrap' }]) {
+  test(`without WebGL a ${theme.name} boost still plays to MAX, with static shapes in place of the effects`, async ({ page }) => {
+    test.setTimeout(120000);
+    const errors: string[] = [];
+    page.on('pageerror', error => errors.push(error.message));
+    page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+    await startGame(page, { count: 2, boost: { autoStart: false, seconds: 12, difficulty: 'easy' } });
+    await skipToRound(page, 2, theme.round);
+    await page.getByRole('button', { name: 'Boost round!' }).click();
+    await expect.poll(() => boostPhase(page), { timeout: 10000 }).toBe('live');
+    await mash(page, { mode: 'keys', pupils: [0, 1], ms: 10000, untilNotLive: true });
+    await expect(page.locator(theme.card)).toBeVisible({ timeout: 6000 });
+    await expect(page.locator(theme.still).first()).toBeAttached({ timeout: 6000 });
+    await expect(page.locator('.sp-bbadge')).toHaveText('Mega boost!', { timeout: 10000 });
+    await expect.poll(() => boostFlow(page), { timeout: 10000 }).toBe('done');
+    await expect(page.locator('.fx-canvas')).toHaveCount(0);
+    await expect(nextButton(page)).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+}

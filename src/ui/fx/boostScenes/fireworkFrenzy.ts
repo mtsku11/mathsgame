@@ -15,7 +15,7 @@ const MAX_ROCKETS = 10;
 const FACE = { x: 640, y: 250 };
 const words: Record<BoostTier, string> = { 1: 'BOOST!', 2: 'SUPER BOOST!', 3: 'MEGA BOOST!' };
 type Kind = 'star' | 'peony' | 'ring' | 'crackle' | 'willow' | 'face';
-type Rocket = { x0: number; y0: number; x1: number; y1: number; t: number; dur: number; colour: number; kind: Kind; radius: number; ember: number };
+type Rocket = { x0: number; y0: number; x1: number; y1: number; t: number; dur: number; colour: number; kind: Kind; radius: number; ember: number; dense?: boolean };
 
 const css = (colour: number): string => `#${colour.toString(16).padStart(6, '0')}`;
 const lighten = (colour: number, amount: number): number => {
@@ -59,8 +59,8 @@ export function createFireworkFrenzyScene(): BoostScene {
   }
 
   // A shell opens at (x, y). Particles start at the centre with a velocity of distance x drag, so drag brings each one to rest at its own place on the outline.
-  function shell(kind: Kind, x: number, y: number, colour: number, radius: number): void {
-    const k = share * crowd();
+  function shell(kind: Kind, x: number, y: number, colour: number, radius: number, dense = false): void {
+    const k = share * crowd() * (dense ? 1.3 : 1);
     const pale = lighten(colour, 0.55);
     shells++;
     if (kind === 'star') {
@@ -110,7 +110,7 @@ export function createFireworkFrenzyScene(): BoostScene {
   }
 
   function explode(rocket: Rocket): void {
-    shell(rocket.kind, rocket.x1, rocket.y1, rocket.colour, rocket.radius);
+    shell(rocket.kind, rocket.x1, rocket.y1, rocket.colour, rocket.radius, rocket.dense);
   }
 
   function fire(rocket: Rocket): void { rockets.push(rocket); publish(); }
@@ -154,7 +154,7 @@ export function createFireworkFrenzyScene(): BoostScene {
       later(span * i / count, () => {
         const player = i % Math.max(1, centres.length), x0 = centres[player] ?? 640;
         fire({ x0, y0: SAUCER_TOP + 6, x1: 110 + ((i * 0.618 + seed) % 1) * 1060, y1: 90 + ((i * 0.37 + seed * 2) % 1) * 270, t: 0, dur: 0.42 + rand() * 0.16, colour: colourOf(player),
-          kind: kinds[(i + Math.floor(seed * 10)) % kinds.length], radius: 110 + rand() * 40, ember: 0 });
+          kind: kinds[(i + Math.floor(seed * 10)) % kinds.length], radius: 125 + rand() * 45, ember: 0, dense: true });
       });
     }
   }
@@ -272,9 +272,9 @@ export function createFireworkFrenzyScene(): BoostScene {
       } else {
         const kinds: Kind[] = finalTier === 3 ? ['star', 'peony', 'willow', 'ring', 'crackle'] : finalTier === 2 ? ['peony', 'ring', 'crackle', 'star'] : ['star', 'peony'];
         if (finalTier === 3) {
-          wave(8, 0.9, kinds, 0.13);
-          later(1.2, () => wave(10, 0.9, kinds, 0.47));
-          later(2.4, () => wave(12, 1.0, kinds, 0.81));
+          wave(8, 0.8, kinds, 0.13);
+          later(0.9, () => wave(10, 0.9, kinds, 0.47));
+          later(1.8, () => wave(12, 1.0, kinds, 0.81));
           later(3.0, () => fire({ x0: 640, y0: SAUCER_TOP - 30, x1: FACE.x, y1: FACE.y, t: 0, dur: 0.5, colour: 0xFFD23F, kind: 'face', radius: 190, ember: 0 }));
           glitter(4.0, 1.3);
         } else {

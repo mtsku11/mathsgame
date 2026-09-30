@@ -108,3 +108,41 @@ test('production plays a Warp Drive boost round offline, including the lazily lo
   expect(failed).toEqual([]);
   expect(errors).toEqual([]);
 });
+
+test('production plays a Firework Frenzy and a Bubble Blast boost offline, with every scene asset already cached', async ({ page, context }) => {
+  test.setTimeout(150000);
+  const errors: string[] = [], failed: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+  page.on('requestfailed', request => failed.push(request.url()));
+  await openSetup(page, origin);
+  await expect(page.locator('#offline-status')).toHaveText('Ready offline');
+  await context.setOffline(true);
+  await page.reload();
+  await enterSetup(page);
+  await page.getByLabel('Crew size').selectOption('2');
+  await setBoost(page, { autoStart: false, seconds: 12, difficulty: 'easy' });
+  await page.getByLabel('Keyboard & on-screen buttons').check();
+  await page.getByRole('button', { name: 'Enter practice' }).click();
+  await page.getByRole('button', { name: 'Launch the journey' }).click();
+  await expect(page.locator('.fx-canvas')).toHaveCount(1);
+  const play = async (scene: string): Promise<void> => {
+    await passAll(page, 2);
+    await page.getByRole('button', { name: 'Boost round!' }).click();
+    await expect(page.locator(`[data-boost-scene="${scene}"]`)).toHaveCount(1);
+    await page.waitForTimeout(5000);
+    await mash(page, { mode: 'keys', pupils: [0, 1], ms: 7000 });
+    await expect(page.locator('.sp-bbadge')).toHaveText('Mega boost!', { timeout: 15000 });
+    await expect(nextButton(page)).toBeVisible({ timeout: 10000 });
+    await nextButton(page).click();
+  };
+  await play('fireworkFrenzy');
+  await passAll(page, 2);
+  await page.getByRole('button', { name: 'Boost round!' }).click();
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Skip boost round' }).click();
+  await nextButton(page).click();
+  await play('bubbleBlast');
+  expect(failed).toEqual([]);
+  expect(errors).toEqual([]);
+});
