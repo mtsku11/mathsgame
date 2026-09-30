@@ -60,7 +60,9 @@ for (const theme of themes) {
       (window as unknown as { __themeSamples: typeof samples }).__themeSamples = samples;
       window.setInterval(() => {
         const rockets = document.querySelector<HTMLElement>('.sp-fw')?.dataset.rockets;
-        if (rockets !== undefined) samples.rockets.push(Number(rockets));
+        // The ten-rocket cap is a live-phase rule; the finale's waves launch on top of any rockets still in flight.
+        const live = (window as unknown as { __nc: { boost: { state: { phase: string } | null } } }).__nc.boost.state?.phase === 'live';
+        if (rockets !== undefined && live) samples.rockets.push(Number(rockets));
         const bubble = document.querySelector('.sp-bb-bubble');
         if (bubble) samples.bubble.push(bubble.getBoundingClientRect().width);
         const eye = document.querySelector('.gl-eye');
