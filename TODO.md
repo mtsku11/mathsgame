@@ -76,7 +76,7 @@ Use PLAN.md's provisional defaults for independent software work while the remai
 - [x] Phase 2 — Game feel (46 unit, 81 browser; 57 fps at 1080p with 4× CPU throttle)
 - [x] Phase 3 — Boost rounds (101 unit, 127 browser; finale fps at 1080p with 4× CPU throttle: Warp 54.2, Firework 58.7, Bubble 59.0; flash-safety tests pass for all three themes)
 - [x] Audio assets produced and checked (orchestrator): 5 music, 30 effects, 104 voice lines (Whisper 104/104); owner listening review pending
-- [ ] Phase 4 — Sound, music and voice integration
+- [x] Phase 4 — Sound, music and voice integration (132 unit, 149 browser, offline 3/3; 362 KB gzipped JS; voice sprites trimmed of silence, Whisper re-check passed; owner listening review of levels and loop seams pending)
 - [ ] Phase 5 — Front-of-house screens
 - [ ] Phase 6 — Spotlight mode, access and performance
 - [ ] Phase 7 — Delivery (owner approval before merge/deploy)
