@@ -145,7 +145,13 @@ export async function attachParticles(app: Application, quality: QualityLevel): 
 }
 
 export function detachParticles(): void {
-  if (attached) gsap.ticker.remove(attached.tick);
+  const old = attached;
+  if (old) {
+    gsap.ticker.remove(old.tick);
+    // Pixi warns when an atlas is destroyed while the particle shader still points at it, so it leaves the stage now and is disposed once the app itself is gone.
+    old.container.removeFromParent();
+    queueMicrotask(() => { try { old.container.destroy({ texture: true, textureSource: true }); } catch { /* the app was already destroyed */ } });
+  }
   attached = null;
   sim = null;
 }
