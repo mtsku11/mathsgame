@@ -2,7 +2,7 @@
 
 ## Purpose and current phase
 
-Number Crew is a cooperative browser maths game for Maths Week in a special school. The teacher has confirmed 3–4 pupils sharing one screen and one Microsoft Xbox Adaptive Controller (XAC) on a Windows PC, with exactly two switches per pupil, counting 1–5, and addition within 10. The TypeScript/Vite implementation includes core maths, input filtering, calibration, practice, a six-round mission, and classroom screens. Phase 1 and Phase 2 software verification have passed, and the public GitHub Pages deployment passes all 20 hosted Chromium scenarios, including offline mission play and the mission-progress artwork. Remaining access-setting acceptance and physical XAC testing remain outstanding. PLAN.md distinguishes confirmed requirements from provisional classroom defaults.
+Number Crew is a cooperative browser maths game for Maths Week in a special school. The teacher has confirmed 3–4 pupils sharing one screen and one Microsoft Xbox Adaptive Controller (XAC) on a Windows PC, with exactly two switches per pupil, counting 1–5, and addition within 10. The TypeScript/Vite implementation includes core maths, input filtering, calibration, practice, a six-round mission, and classroom screens. Phase 1 and Phase 2 software verification have passed, and the public GitHub Pages deployment passes all 21 hosted Chromium scenarios, including offline mission play, mission-progress artwork, access announcements, and recovery simulations. Manual access acceptance and physical XAC testing remain outstanding. PLAN.md distinguishes confirmed requirements from provisional classroom defaults.
 
 ## Context-loading order
 
