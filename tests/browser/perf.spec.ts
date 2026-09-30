@@ -74,6 +74,8 @@ test('Warp Drive MAX with four pupils mashing stays at 45 fps or better at 1920x
     const loop = (time: number): void => { probe.times.push(time); if (!probe.stop) requestAnimationFrame(loop); };
     requestAnimationFrame(loop);
   });
+  // Three seconds of one pupil pressing (bolts, heat, the others' idle sparkles), then everyone to MAX.
+  await mash(page, { mode: 'keys', pupils: [0], ms: 3000 });
   await mash(page, { mode: 'keys', pupils: [0, 1, 2, 3], ms: 20000, untilNotLive: true });
   await expect.poll(() => boostFlow(page), { timeout: 30000 }).toBe('done');
   const times = await page.evaluate(() => { const probe = (window as unknown as { __probe: { times: number[]; stop: boolean } }).__probe; probe.stop = true; return probe.times; });

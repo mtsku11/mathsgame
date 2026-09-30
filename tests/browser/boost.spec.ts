@@ -426,3 +426,83 @@ test('enlarged turns: the boost still has one saucer per pupil, and the single s
   await expect(page.locator('.sp-st').first()).toHaveCSS('opacity', '1');
   expect(errors).toEqual([]);
 });
+
+test('low stimulation: the Warp Drive finale is the calm fade, and the badge and planet still appear', async ({ page }) => {
+  test.setTimeout(90000);
+  const errors = errorsOf(page);
+  await startGame(page, { count: 2, boost: { autoStart: false, seconds: 12, difficulty: 'easy' } });
+  await recordBoost(page);
+  await passAll(page, 2);
+  await page.getByRole('button', { name: 'Boost round!' }).click();
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Skip boost round' }).click();
+  await nextButton(page).click();
+  await passAll(page, 2);
+  await page.evaluate(() => (window as unknown as { __nc: { motion: { setLowStim(value: boolean): void } } }).__nc.motion.setLowStim(true));
+  await page.getByRole('button', { name: 'Boost round!' }).click();
+  await expect.poll(() => boostPhase(page), { timeout: 10000 }).toBe('live');
+  await mash(page, { mode: 'keys', pupils: [0, 1], ms: 10000, untilNotLive: true });
+  await expect(page.locator('.sp-bgiant.is-hyper')).toBeVisible();
+  await expect(page.locator('.sp-bbadge')).toHaveText('Mega boost!', { timeout: 10000 });
+  await expect(page.locator('.sp-dest-name')).toHaveText('Candy Planet');
+  await untilDone(page, 10000);
+  expect(errors).toEqual([]);
+});
+
+test('ending the journey in the middle of a boost returns to setup, and the next journey plays normally', async ({ page }) => {
+  test.setTimeout(90000);
+  const errors = errorsOf(page);
+  await startGame(page, { count: 2, boost: { autoStart: false, seconds: 12, difficulty: 'easy' } });
+  await passAll(page, 2);
+  await page.getByRole('button', { name: 'Boost round!' }).click();
+  await expect.poll(() => boostPhase(page), { timeout: 10000 }).toBe('live');
+  await page.keyboard.press('Escape');
+  page.once('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: 'End journey & return to setup' }).click();
+  await expect(page.getByLabel('Crew size')).toBeVisible();
+  expect(await boostFlow(page)).toBe('idle');
+  expect(await boostState(page)).toBeNull();
+  await page.getByLabel('Keyboard & on-screen buttons').check();
+  await page.getByRole('button', { name: 'Enter practice' }).click();
+  await page.getByRole('button', { name: 'Launch the journey' }).click();
+  await expect(page.locator('.sp-st')).toHaveCount(2);
+  await passAll(page, 2);
+  await page.getByRole('button', { name: 'Boost round!' }).click();
+  await expect.poll(() => boostPhase(page), { timeout: 10000 }).toBe('live');
+  await mash(page, { mode: 'keys', pupils: [0, 1], ms: 10000, untilNotLive: true });
+  await untilDone(page, 15000);
+  expect(errors).toEqual([]);
+});
+
+test('two Warp Drive boosts in one mission set up and tear down cleanly, with no console warnings from the effects layer', async ({ page }) => {
+  test.setTimeout(150000);
+  const problems: string[] = [];
+  page.on('pageerror', error => problems.push(error.message));
+  page.on('console', message => { if ((message.type() === 'error' || message.type() === 'warning') && !message.text().includes('GPU stall')) problems.push(`${message.type()}: ${message.text()}`); });
+  await startGame(page, { count: 3, boost: { autoStart: false, seconds: 12, difficulty: 'easy' } });
+  await expect(page.locator('.fx-canvas')).toHaveCount(1);
+  const skip = async (): Promise<void> => {
+    await passAll(page, 3);
+    await page.getByRole('button', { name: 'Boost round!' }).click();
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'Skip boost round' }).click();
+    await nextButton(page).click();
+  };
+  const real = async (): Promise<void> => {
+    await passAll(page, 3);
+    await page.getByRole('button', { name: 'Boost round!' }).click();
+    await expect.poll(() => boostPhase(page), { timeout: 10000 }).toBe('live');
+    await mash(page, { mode: 'keys', pupils: [0, 1, 2], ms: 10000, untilNotLive: true });
+    await untilDone(page, 15000);
+    await nextButton(page).click();
+  };
+  await skip();
+  await real();
+  await skip();
+  await real();
+  await expect(page.locator('.sp-hub .sp-round')).toHaveText('Round 5 of 6');
+  await expect(page.locator('.sp-dest-name')).toHaveText('Frosty Moon');
+  await expect(page.locator('.fx-canvas')).toHaveCount(1);
+  expect(await page.locator('.sp-btop, .sp-bworld').count()).toBe(0);
+  expect(problems).toEqual([]);
+});

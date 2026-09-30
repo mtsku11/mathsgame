@@ -47,7 +47,7 @@ interface Run {
   config: BoostConfig; scene: BoostScene; world: HTMLElement; top: HTMLElement; row: HTMLElement; hud: HTMLElement; beams: SVGPathElement[];
   saucers: Saucer[]; meter: PowerMeter; ring: TimerRing; cards: BoostCards; chrome: Element[]; stationMoves: { el: HTMLElement; x: number; y: number; scale: number }[];
   countdown: number | null; wrapShown: boolean; fraction: number; nudged: number[]; tier: number; chromeShown: boolean; bolts: Set<() => void>;
-  ended: boolean; hudVisible: boolean; sceneGone: boolean;
+  ended: boolean; hudVisible: boolean; sceneGone: boolean; nebulas: Element[]; nebulaBase: number[];
 }
 
 const TARGET_FLIGHT = [0.22, 0.28];
@@ -158,6 +158,7 @@ export function createBoostScreen(env: BoostEnv): BoostScreen {
       if (calm || fast) gsap.fromTo(el, { x: 0, y: 0, scale: 1, opacity: 0 }, { opacity: 1, duration: seconds, clearProps: 'transform,opacity' });
       else gsap.fromTo(el, { x, y, scale, opacity: 0 }, { x: 0, y: 0, scale: 1, opacity: 1, duration: 0.55, delay: i * 0.05, ease: 'back.out(1.5)', clearProps: 'transform,opacity' });
     });
+    gsap.to(r.nebulas, { opacity: (i: number) => r.nebulaBase[i], duration: seconds + 0.3, overwrite: 'auto', clearProps: 'opacity' });
     gsap.to(r.row, { opacity: 0, duration: seconds, ease: 'power1.in' });
     gsap.to(r.hud, { opacity: 0, duration: seconds });
     const done = (): void => { leaving.delete(done); teardown(r); env.root.classList.remove('is-boosting'); env.root.inert = false; };
@@ -200,7 +201,9 @@ export function createBoostScreen(env: BoostEnv): BoostScreen {
       const r: Run = {
         config, scene, world, top, row, hud, beams: [], saucers, meter, ring, cards, stationMoves: [], countdown: null, wrapShown: false, fraction: 0, nudged: saucers.map(() => 0), tier: 0,
         chrome: [...env.root.children].filter(child => child.matches(CHROME)), chromeShown: false, bolts: new Set(), ended: false, hudVisible: false, sceneGone: false,
+        nebulas: [...env.stage.element.querySelectorAll('.sp-neb')], nebulaBase: [],
       };
+      r.nebulaBase = r.nebulas.map(nebula => Number(getComputedStyle(nebula).opacity));
       run = r;
       env.root.classList.add('is-boosting');
       env.root.inert = true;
@@ -294,6 +297,8 @@ export function createBoostScreen(env: BoostEnv): BoostScreen {
         const at = stagePoint(star);
         burst(at.x, at.y, { count: 16, colours: [0xFFD23F, 0xFFF0A8, 0xFFFFFF], size: [12, 22], speed: [90, 240], life: [0.4, 0.8] });
       }
+      // The background nebula brightens one step per tier.
+      if (!isCalm()) gsap.to(r.nebulas, { opacity: (i: number) => Math.min(0.9, r.nebulaBase[i] + 0.09 * tier), duration: 0.6, ease: 'sine.out', overwrite: 'auto' });
       r.cards.word(tier);
       r.scene.onTier(tier);
     },
@@ -330,6 +335,8 @@ export function createBoostScreen(env: BoostEnv): BoostScreen {
         r.stationMoves.forEach(({ el }) => { gsap.killTweensOf(el); gsap.set(el, { clearProps: 'transform,opacity' }); });
         gsap.killTweensOf(r.chrome);
         gsap.set(r.chrome, { clearProps: 'opacity' });
+        gsap.killTweensOf(r.nebulas);
+        gsap.set(r.nebulas, { clearProps: 'opacity' });
         teardown(r);
       }
       env.root.classList.remove('is-boosting');
