@@ -18,7 +18,7 @@ async function mapAndCheck(page: Page, count: number) {
   await press(page, Array.from({ length: count }, (_, i) => i * 2 + 1));
   await press(page, []);
 }
-for (const count of [3, 4]) {
+for (const count of [1, 2, 3, 4]) {
   test(`simulated shared XAC: ${count} pupils calibrate and recover without losing progress`, async ({ page }) => {
     const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
     await page.addInitScript(() => {

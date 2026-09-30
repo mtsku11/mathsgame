@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-for (const count of [3, 4]) {
+for (const count of [1, 2, 3, 4]) {
   for (const enlarged of [false, true]) {
     test(`${count} pupils ${enlarged ? 'enlarged' : 'simultaneous'} retain controls and large targets at 720p`, async ({ page }) => {
       await page.setViewportSize({ width: 1280, height: 720 });

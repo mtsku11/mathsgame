@@ -142,8 +142,34 @@ for (const count of [3, 4]) {
   });
 }
 
+for (const count of [1, 2]) {
+  test(`${count} player${count > 1 ? 's' : ''} answer six rounds and see only their own stations`, async ({ page }) => {
+    await page.goto('./');
+    await page.getByLabel('Crew size').selectOption(String(count));
+    await page.getByLabel('Keyboard & on-screen buttons').check();
+    await page.getByRole('button', { name: 'Enter practice' }).click();
+    await page.getByRole('button', { name: 'Launch the journey' }).click();
+    await page.waitForTimeout(150);
+    await expect(page.locator('.station')).toHaveCount(count);
+    for (let round = 1; round <= 6; round++) {
+      for (let pupil = 0; pupil < count; pupil++) {
+        const station = page.locator('.station').nth(pupil);
+        const total = await station.locator('.question-area .dot').count();
+        const choices = await station.locator('.answer-value').allTextContents();
+        await station.locator('.answer').nth(choices.findIndex(value => Number(value) === total)).click();
+        await expect(station.locator('.station-footer > p')).toContainText('Cargo ready');
+      }
+      await expect(page.locator('.star-total strong')).toHaveText(String(round * count));
+      await page.getByRole('button', { name: round === 6 ? 'Finish journey' : 'Next round' }).click();
+      await page.waitForTimeout(600);
+    }
+    await expect(page.locator('.result-stars')).toContainText(`${6 * count} crew stars collected`);
+  });
+}
+
 test('automatic completed rounds freeze while paused; enlarged turns remain teacher controlled', async ({ page }) => {
   await page.goto('./');
+  await page.getByLabel('Crew size').selectOption('3');
   await page.getByLabel('Advance completed rounds automatically').check();
   await page.getByLabel('Celebration delay').selectOption('2');
   await page.getByLabel('Screen layout').selectOption('enlarged');

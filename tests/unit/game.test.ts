@@ -56,3 +56,39 @@ describe('cooperative journey', () => {
     expect(session.active).toBe(0); expect(session.round).toBe(2);
   });
 });
+
+describe('one and two player missions', () => {
+  for (const count of [1, 2]) {
+    it(`${count} player${count > 1 ? 's' : ''} complete six rounds with at most one star per pupil per round`, () => {
+      const presets: Preset[] = (['count', 'add5'] as Preset[]).slice(0, count);
+      const random = seededRandom(20 + count), session = createSession(presets, random);
+      expect(session.turns).toHaveLength(count);
+      for (let round = 1; round <= 6; round++) {
+        expect(ready(session)).toBe(false);
+        for (let pupil = 0; pupil < count; pupil++) {
+          const correct = session.turns[pupil].question.correct;
+          expect(answer(session, pupil, correct === 0 ? 1 : 0)).toBe(false);
+          expect(answer(session, pupil, correct)).toBe(true);
+          expect(answer(session, pupil, correct)).toBe(false);
+        }
+        expect(session.stars).toBe(round * count);
+        expect(ready(session)).toBe(true);
+        expect(advance(session, presets, random, false)).toBe(true);
+      }
+      expect(session.finished).toBe(true);
+      expect(session.stars).toBe(6 * count);
+      expect(session.history).toHaveLength(6);
+      for (const turns of session.history) {
+        expect(turns).toHaveLength(count);
+        expect(turns.filter(turn => turn.outcome === 'correct').length).toBeLessThanOrEqual(count);
+        expect(turns.every(turn => turn.attempts === 2)).toBe(true);
+      }
+      expect(advance(session, presets, random, false)).toBe(false);
+    });
+  }
+  it('a single player who passes every round finishes with no stars', () => {
+    const presets: Preset[] = ['count'], random = seededRandom(5), session = createSession(presets, random);
+    for (let round = 1; round <= 6; round++) { pass(session, 0); expect(advance(session, presets, random, true)).toBe(true); }
+    expect(session.finished).toBe(true); expect(session.stars).toBe(0);
+  });
+});
