@@ -71,11 +71,11 @@ Use PLAN.md's provisional defaults for independent software work while the remai
 
 ## Redesign — Star Pilots (docs/REDESIGN-PLAN.md, branch `redesign`)
 
-- [ ] Phase 0 — Foundations (stage, router, events, motion, Pixi layer, fonts, settings v2, 1–4 players)
+- [x] Phase 0 — Foundations (stage, router, events, motion, Pixi layer, fonts, settings v2, 1–4 players)
 - [ ] Phase 1 — Play screen static fidelity
 - [ ] Phase 2 — Game feel
 - [ ] Phase 3 — Boost rounds
-- [ ] Audio assets produced and checked (orchestrator)
+- [x] Audio assets produced and checked (orchestrator): 5 music, 30 effects, 104 voice lines (Whisper 104/104); owner listening review pending
 - [ ] Phase 4 — Sound, music and voice integration
 - [ ] Phase 5 — Front-of-house screens
 - [ ] Phase 6 — Spotlight mode, access and performance

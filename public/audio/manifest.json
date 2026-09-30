@@ -1,0 +1,730 @@
+{
+ "generatedBy": "ElevenLabs (eleven_music_v2_5, eleven_text_to_sound_v2, eleven_v3 voice \"Dan - British Professional\"); processed with ffmpeg",
+ "music": {
+  "title": {
+   "loop": true,
+   "loopFrom": 7.44,
+   "loopTo": 44.94,
+   "duration": 37.56,
+   "src": [
+    "audio/music/title.webm"
+   ]
+  },
+  "mission": {
+   "loop": true,
+   "loopFrom": 4.5,
+   "loopTo": 83.74,
+   "duration": 79.3,
+   "src": [
+    "audio/music/mission.webm"
+   ]
+  },
+  "boost": {
+   "loop": false,
+   "duration": 30,
+   "src": [
+    "audio/music/boost.webm"
+   ]
+  },
+  "jingle_round": {
+   "loop": false,
+   "duration": 6,
+   "src": [
+    "audio/music/jingle_round.webm"
+   ]
+  },
+  "jingle_mission": {
+   "loop": false,
+   "duration": 12.49,
+   "src": [
+    "audio/music/jingle_mission.webm"
+   ]
+  }
+ },
+ "sfx": {
+  "src": [
+   "audio/sfx.webm"
+  ],
+  "sprite": {
+   "beep": [
+    0,
+    480,
+    0.6
+   ],
+   "boop": [
+    730,
+    480,
+    0.5
+   ],
+   "cheer": [
+    1460,
+    3000,
+    0.6
+   ],
+   "click": [
+    4710,
+    88,
+    0.5
+   ],
+   "collect": [
+    5048,
+    1000,
+    0.7
+   ],
+   "correct": [
+    6298,
+    1480,
+    0.8
+   ],
+   "deal": [
+    8028,
+    502,
+    0.5
+   ],
+   "fly": [
+    8781,
+    1200,
+    0.5
+   ],
+   "fw_burst": [
+    10231,
+    1601,
+    0.45
+   ],
+   "fw_finale": [
+    12081,
+    6000,
+    0.85
+   ],
+   "fw_launch": [
+    18331,
+    1480,
+    0.4
+   ],
+   "giggle": [
+    20062,
+    1995,
+    0.7
+   ],
+   "go": [
+    22307,
+    694,
+    0.8
+   ],
+   "help": [
+    23250,
+    1480,
+    0.6
+   ],
+   "mega": [
+    24980,
+    3000,
+    0.85
+   ],
+   "pause": [
+    28231,
+    800,
+    0.5
+   ],
+   "pew": [
+    29281,
+    2000,
+    0.35
+   ],
+   "pew2": [
+    31531,
+    480,
+    0.35
+   ],
+   "pop": [
+    32261,
+    1480,
+    0.9
+   ],
+   "press": [
+    33991,
+    600,
+    0.6
+   ],
+   "resume": [
+    34841,
+    761,
+    0.5
+   ],
+   "slam": [
+    35852,
+    958,
+    0.7
+   ],
+   "spark": [
+    37059,
+    600,
+    0.35
+   ],
+   "stretch": [
+    37909,
+    794,
+    0.45
+   ],
+   "tierup": [
+    38954,
+    1760,
+    0.8
+   ],
+   "try": [
+    40964,
+    800,
+    0.5
+   ],
+   "wake": [
+    42014,
+    1000,
+    0.6
+   ],
+   "warp_arrive": [
+    43264,
+    1231,
+    0.7
+   ],
+   "warp_charge": [
+    44745,
+    4000,
+    0.6
+   ],
+   "warp_launch": [
+    48995,
+    2453,
+    0.9
+   ]
+  }
+ },
+ "voice": {
+  "src": [
+   "audio/voice.webm"
+  ],
+  "sprite": {
+   "num_1": [
+    0,
+    1681
+   ],
+   "num_2": [
+    1931,
+    3174
+   ],
+   "num_3": [
+    5356,
+    3222
+   ],
+   "num_4": [
+    8828,
+    3102
+   ],
+   "num_5": [
+    12180,
+    3032
+   ],
+   "num_6": [
+    15462,
+    3077
+   ],
+   "num_7": [
+    18789,
+    2980
+   ],
+   "num_8": [
+    22019,
+    2913
+   ],
+   "num_9": [
+    25182,
+    2997
+   ],
+   "num_10": [
+    28429,
+    1627
+   ],
+   "add_1_1": [
+    30306,
+    2531
+   ],
+   "add_1_2": [
+    33087,
+    4794
+   ],
+   "add_1_3": [
+    38132,
+    4501
+   ],
+   "add_1_4": [
+    42882,
+    3771
+   ],
+   "add_1_5": [
+    46904,
+    3917
+   ],
+   "add_1_6": [
+    51071,
+    3854
+   ],
+   "add_1_7": [
+    55175,
+    3783
+   ],
+   "add_1_8": [
+    59208,
+    3770
+   ],
+   "add_1_9": [
+    63228,
+    3978
+   ],
+   "add_2_1": [
+    67456,
+    3948
+   ],
+   "add_2_2": [
+    71655,
+    3690
+   ],
+   "add_2_3": [
+    75595,
+    3608
+   ],
+   "add_2_4": [
+    79453,
+    3662
+   ],
+   "add_2_5": [
+    83365,
+    3627
+   ],
+   "add_2_6": [
+    87243,
+    2530
+   ],
+   "add_2_7": [
+    90022,
+    2052
+   ],
+   "add_2_8": [
+    92324,
+    3918
+   ],
+   "add_3_1": [
+    96492,
+    3038
+   ],
+   "add_3_2": [
+    99780,
+    3100
+   ],
+   "add_3_3": [
+    103130,
+    3048
+   ],
+   "add_3_4": [
+    106428,
+    2975
+   ],
+   "add_3_5": [
+    109654,
+    3206
+   ],
+   "add_3_6": [
+    113110,
+    3311
+   ],
+   "add_3_7": [
+    116671,
+    3203
+   ],
+   "add_4_1": [
+    120124,
+    3030
+   ],
+   "add_4_2": [
+    123404,
+    3118
+   ],
+   "add_4_3": [
+    126772,
+    2833
+   ],
+   "add_4_4": [
+    129855,
+    3157
+   ],
+   "add_4_5": [
+    133261,
+    3224
+   ],
+   "add_4_6": [
+    136735,
+    2628
+   ],
+   "add_5_1": [
+    139613,
+    2321
+   ],
+   "add_5_2": [
+    142183,
+    4604
+   ],
+   "add_5_3": [
+    147037,
+    4765
+   ],
+   "add_5_4": [
+    152053,
+    3085
+   ],
+   "add_5_5": [
+    155387,
+    3479
+   ],
+   "add_6_1": [
+    159117,
+    3817
+   ],
+   "add_6_2": [
+    163183,
+    2508
+   ],
+   "add_6_3": [
+    165942,
+    3454
+   ],
+   "add_6_4": [
+    169646,
+    3232
+   ],
+   "add_7_1": [
+    173127,
+    3760
+   ],
+   "add_7_2": [
+    177138,
+    3465
+   ],
+   "add_7_3": [
+    180853,
+    3414
+   ],
+   "add_8_1": [
+    184517,
+    3453
+   ],
+   "add_8_2": [
+    188220,
+    3324
+   ],
+   "add_9_1": [
+    191794,
+    2554
+   ],
+   "how_many": [
+    194598,
+    2433
+   ],
+   "count_together": [
+    197281,
+    3367
+   ],
+   "another_go": [
+    200898,
+    2864
+   ],
+   "praise_brilliant": [
+    204012,
+    1856
+   ],
+   "praise_great_counting": [
+    206119,
+    1919
+   ],
+   "praise_well_done": [
+    208288,
+    2362
+   ],
+   "praise_awesome": [
+    210899,
+    2612
+   ],
+   "praise_nice_one": [
+    213761,
+    2622
+   ],
+   "praise_you_got_it": [
+    216633,
+    2508
+   ],
+   "praise_super_star": [
+    219391,
+    2526
+   ],
+   "all_stars": [
+    222167,
+    1874
+   ],
+   "round_1": [
+    224292,
+    1802
+   ],
+   "round_2": [
+    226344,
+    2879
+   ],
+   "round_3": [
+    229473,
+    2881
+   ],
+   "round_4": [
+    232604,
+    3029
+   ],
+   "round_5": [
+    235883,
+    3227
+   ],
+   "round_6": [
+    239360,
+    2905
+   ],
+   "welcome_golden_rings": [
+    242515,
+    3064
+   ],
+   "welcome_candy_planet": [
+    245830,
+    2833
+   ],
+   "welcome_frosty_moon": [
+    248913,
+    3319
+   ],
+   "next_stop_home": [
+    252482,
+    3010
+   ],
+   "mission_complete": [
+    255741,
+    3371
+   ],
+   "boost_round": [
+    259362,
+    1915
+   ],
+   "theme_warp": [
+    261527,
+    2612
+   ],
+   "theme_fireworks": [
+    264389,
+    2904
+   ],
+   "theme_bubble": [
+    267542,
+    2485
+   ],
+   "press_fast": [
+    270277,
+    3403
+   ],
+   "count_3": [
+    273930,
+    1606
+   ],
+   "count_2": [
+    275785,
+    1524
+   ],
+   "count_1": [
+    277559,
+    1555
+   ],
+   "go": [
+    279364,
+    1647
+   ],
+   "tier_boost": [
+    281261,
+    1831
+   ],
+   "tier_super": [
+    283342,
+    2244
+   ],
+   "tier_mega": [
+    285836,
+    2181
+   ],
+   "max_power": [
+    288267,
+    2611
+   ],
+   "hyperspace": [
+    291128,
+    2823
+   ],
+   "pop": [
+    294201,
+    1524
+   ],
+   "keep_going": [
+    295975,
+    2110
+   ],
+   "amazing_boosting": [
+    298335,
+    2046
+   ],
+   "pilot_pink": [
+    300630,
+    2313
+   ],
+   "pilot_blue": [
+    303193,
+    2887
+   ],
+   "pilot_orange": [
+    306330,
+    3105
+   ],
+   "pilot_green": [
+    309686,
+    3216
+   ],
+   "your_turn": [
+    313151,
+    2655
+   ],
+   "crew_check": [
+    316057,
+    4940
+   ],
+   "ready": [
+    321247,
+    1329
+   ],
+   "title": [
+    322826,
+    2846
+   ],
+   "lets_go": [
+    325922,
+    2073
+   ],
+   "take_break": [
+    328245,
+    2715
+   ]
+  },
+  "text": {
+   "num_1": "one",
+   "num_2": "two",
+   "num_3": "three",
+   "num_4": "four",
+   "num_5": "five",
+   "num_6": "six",
+   "num_7": "seven",
+   "num_8": "eight",
+   "num_9": "nine",
+   "num_10": "ten",
+   "add_1_1": "What is one plus one?",
+   "add_1_2": "What is one plus two?",
+   "add_1_3": "What is one plus three?",
+   "add_1_4": "What is one plus four?",
+   "add_1_5": "What is one plus five?",
+   "add_1_6": "What is one plus six?",
+   "add_1_7": "What is one plus seven?",
+   "add_1_8": "What is one plus eight?",
+   "add_1_9": "What is one plus nine?",
+   "add_2_1": "What is two plus one?",
+   "add_2_2": "What is two plus two?",
+   "add_2_3": "What is two plus three?",
+   "add_2_4": "What is two plus four?",
+   "add_2_5": "What is two plus five?",
+   "add_2_6": "What is two plus six?",
+   "add_2_7": "What is two plus seven?",
+   "add_2_8": "What is two plus eight?",
+   "add_3_1": "What is three plus one?",
+   "add_3_2": "What is three plus two?",
+   "add_3_3": "What is three plus three?",
+   "add_3_4": "What is three plus four?",
+   "add_3_5": "What is three plus five?",
+   "add_3_6": "What is three plus six?",
+   "add_3_7": "What is three plus seven?",
+   "add_4_1": "What is four plus one?",
+   "add_4_2": "What is four plus two?",
+   "add_4_3": "What is four plus three?",
+   "add_4_4": "What is four plus four?",
+   "add_4_5": "What is four plus five?",
+   "add_4_6": "What is four plus six?",
+   "add_5_1": "What is five plus one?",
+   "add_5_2": "What is five plus two?",
+   "add_5_3": "What is five plus three?",
+   "add_5_4": "What is five plus four?",
+   "add_5_5": "What is five plus five?",
+   "add_6_1": "What is six plus one?",
+   "add_6_2": "What is six plus two?",
+   "add_6_3": "What is six plus three?",
+   "add_6_4": "What is six plus four?",
+   "add_7_1": "What is seven plus one?",
+   "add_7_2": "What is seven plus two?",
+   "add_7_3": "What is seven plus three?",
+   "add_8_1": "What is eight plus one?",
+   "add_8_2": "What is eight plus two?",
+   "add_9_1": "What is nine plus one?",
+   "how_many": "How many stars?",
+   "count_together": "Let's count together.",
+   "another_go": "Have another go.",
+   "praise_brilliant": "Brilliant!",
+   "praise_great_counting": "Great counting!",
+   "praise_well_done": "Well done!",
+   "praise_awesome": "Awesome!",
+   "praise_nice_one": "Nice one!",
+   "praise_you_got_it": "You got it!",
+   "praise_super_star": "Super star!",
+   "all_stars": "All stars collected!",
+   "round_1": "Round one!",
+   "round_2": "Round two!",
+   "round_3": "Round three!",
+   "round_4": "Round four!",
+   "round_5": "Round five!",
+   "round_6": "Round six!",
+   "welcome_golden_rings": "Welcome to Golden Rings!",
+   "welcome_candy_planet": "Welcome to Candy Planet!",
+   "welcome_frosty_moon": "Welcome to Frosty Moon!",
+   "next_stop_home": "Next stop, home!",
+   "mission_complete": "Mission complete! Brilliant teamwork, crew!",
+   "boost_round": "Boost round!",
+   "theme_warp": "Warp drive!",
+   "theme_fireworks": "Firework frenzy!",
+   "theme_bubble": "Bubble blast!",
+   "press_fast": "Press your switches as fast as you can!",
+   "count_3": "Three!",
+   "count_2": "Two!",
+   "count_1": "One!",
+   "go": "Go!",
+   "tier_boost": "Boost!",
+   "tier_super": "Super!",
+   "tier_mega": "Mega!",
+   "max_power": "Maximum power!",
+   "hyperspace": "Hyperspace!",
+   "pop": "Pop!",
+   "keep_going": "Keep going!",
+   "amazing_boosting": "Amazing boosting!",
+   "pilot_pink": "Pink pilot.",
+   "pilot_blue": "Blue pilot.",
+   "pilot_orange": "Orange pilot.",
+   "pilot_green": "Green pilot.",
+   "your_turn": "Your turn.",
+   "crew_check": "Crew check! Press your switches to wake up your pilot.",
+   "ready": "Ready!",
+   "title": "Number Crew! Star Pilots!",
+   "lets_go": "Let's go, crew!",
+   "take_break": "Take a break. Your stars are safe."
+  }
+ }
+}
