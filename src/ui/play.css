@@ -784,6 +784,23 @@ background:#1A1446;
 color:#fff;
 font-size:1em;
 font-weight:600}
+.sp-volumes{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:.7em}
+.sp-check{
+display:flex;
+align-items:center;
+gap:.6em;
+font-size:1.05em;
+font-weight:700}
+.sp-check input{
+width:1.4em;
+height:1.4em;
+accent-color:var(--sp-gold)}
+.sp-check input:focus-visible{
+outline:4px solid #fff;
+outline-offset:4px}
 :is(.nc-reduced,.nc-lowstim,.nc-instant) .sp-btn{
 transition:none}
 :is(.nc-reduced,.nc-lowstim,.nc-instant) .sp-btn.is-ready::after{

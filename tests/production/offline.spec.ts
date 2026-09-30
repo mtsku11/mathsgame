@@ -37,6 +37,15 @@ test('production reloads offline, completes a mission, and defers updates until 
   await enterSetup(page);
   await expect(page.locator('#offline-status')).toHaveText('Ready offline');
   expect(await page.evaluate(() => navigator.onLine)).toBe(false);
+  // The teacher's click unlocks audio; the manifest, sprites and music load from the cache while the teacher sets up.
+  await expect.poll(() => page.evaluate(() => (window as any).__NC_AUDIO__.state().music.id), { timeout: 15000 }).toBe('title');
+  // Every audio file named by the manifest, and the manifest itself, is in the offline cache.
+  expect(await page.evaluate(async () => {
+    const manifest = await (await fetch('audio/manifest.json')).json();
+    const files: string[] = [...Object.values<{ src: string[] }>(manifest.music).flatMap(entry => entry.src), ...manifest.sfx.src, ...manifest.voice.src, 'audio/manifest.json'];
+    const cache = await caches.open((await caches.keys()).find(name => name.startsWith('number-crew-'))!);
+    return (await Promise.all(files.map(async file => await cache.match(new URL(file, document.baseURI).href) ? null : file))).filter(Boolean);
+  })).toEqual([]);
   await page.getByLabel('Crew size').selectOption('4');
   await setBoost(page, false);
   await page.getByLabel('Keyboard & on-screen buttons').check();
@@ -51,6 +60,14 @@ test('production reloads offline, completes a mission, and defers updates until 
     if (round < 6) await page.waitForTimeout(550);
   }
   await expect(page.locator('.sp-fin-stars')).toContainText('24 crew stars collected');
+  // Real Web Audio, offline: every sprite and track decoded from the cache, and the mission was voiced, scored and finished with the jingle.
+  await expect.poll(() => page.evaluate(() => (window as any).__NC_AUDIO__.state().loaded.music.length)).toBe(5);
+  expect(await page.evaluate(() => (window as any).__NC_AUDIO__.state())).toMatchObject({ backend: 'howler', unlocked: true, ready: true, loaded: { sfx: true, voice: true } });
+  const wanted = ['music:title', 'music:mission', 'voice:round_1', 'sfx:correct', 'music:jingle_round', 'music:jingle_mission', 'voice:mission_complete'];
+  await expect.poll(() => page.evaluate(names => {
+    const played = (window as any).__NC_AUDIO__.log.filter((entry: { action: string }) => entry.action === 'play').map((entry: { channel: string; id: string }) => `${entry.channel}:${entry.id}`);
+    return names.filter(name => !played.includes(name));
+  }, wanted), { timeout: 10000 }).toEqual([]);
   await context.setOffline(false);
   await page.getByRole('button', { name: 'Another adventure' }).click();
   await page.getByRole('button', { name: 'Launch the journey' }).click();
@@ -105,6 +122,8 @@ test('production plays a Warp Drive boost round offline, including the lazily lo
   await expect(page.locator('.sp-bbadge')).toHaveText('Mega boost!', { timeout: 15000 });
   await expect(page.locator('.sp-dest-name')).toHaveText('Candy Planet');
   await expect(nextButton(page)).toBeVisible({ timeout: 10000 });
+  const played = await page.evaluate(() => (window as any).__NC_AUDIO__.log.filter((entry: { action: string }) => entry.action === 'play').map((entry: { channel: string; id: string }) => `${entry.channel}:${entry.id}`));
+  expect(played).toEqual(expect.arrayContaining(['music:boost', 'sfx:beep', 'sfx:go', 'sfx:pew', 'sfx:tierup', 'sfx:mega', 'sfx:warp_launch', 'voice:hyperspace']));
   expect(failed).toEqual([]);
   expect(errors).toEqual([]);
 });

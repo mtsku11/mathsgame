@@ -58,6 +58,7 @@ export function createBoostRun(env: BoostRunEnv): BoostRun {
   let wait = 0;
   let arrival: Destination | null = null;
   let arrivedNow = false;
+  let counted: number | null = null;
   const players = (): number => env.settings.count;
 
   function snapshot(): BoostSnapshot | null {
@@ -105,6 +106,7 @@ export function createBoostRun(env: BoostRunEnv): BoostRun {
     counter.sample(held.slice(0, count), now);
     flow = 'running';
     arrivedNow = false;
+    counted = null;
     const next = theme === 'warpDrive' ? arrivalOf(round) : null;
     events.emit('boostStart', { round, theme });
     env.view.begin({ round, theme, players: count, stars: env.stars(), destination: next === null ? null : destinations[next] });
@@ -131,11 +133,13 @@ export function createBoostRun(env: BoostRunEnv): BoostRun {
       if (!state) return;
       handle(tick(s, now), 0);
       if (!state) return;
+      const count = countdownOf(s);
+      if (count !== null && count !== counted) { counted = count; events.emit('boostCount', { n: count as 1 | 2 | 3 }); }
       const at = arriveAtMs(s);
       if (!arrivedNow && at !== null && s.phase === 'finale' && s.phaseTime >= at) {
         arrivedNow = true;
         const next = arrivalOf(env.round());
-        if (next !== null) { arrival = next; env.view.arrive(); env.arrived(next); }
+        if (next !== null) { arrival = next; env.view.arrive(); env.arrived(next); } else if (s.theme === 'warpDrive') events.emit('homeReached');
       }
       const shot = snapshot();
       if (shot) env.view.update(shot);

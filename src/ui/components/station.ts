@@ -1,7 +1,7 @@
 import type { Question, Side } from '../../game/questions';
 import type { Turn } from '../../game/session';
 import { icons, shapeMarker } from '../art/icons';
-import { pilot, type PilotMood } from '../art/pilot';
+import { pilot, pilotColors, type PilotMood } from '../art/pilot';
 import { idle, kill } from '../fx/motion';
 import { createAnswerButton, type AnswerButton, type AnswerLook } from './answerButton';
 import { objectsMarkup, starSize, zones, type Geo } from './objects';
@@ -19,13 +19,14 @@ export function createStation(slot: number, geo: Geo): Station {
   el.innerHTML = `<div class="sp-pilot"><div class="sp-bob"></div></div><span class="sp-shape" aria-hidden="true"></span><p class="sp-pill" hidden></p>
 <p class="sp-prompt"></p><div class="sp-objs" role="img"></div>
 <div class="sp-ans"></div>
-<div class="sp-teach"><button type="button" class="sp-ghost" data-help>${icons.help(22)}</button><button type="button" class="sp-ghost" data-pass>${icons.pass(22)}</button></div>`;
+<div class="sp-teach"><button type="button" class="sp-ghost" data-say>${icons.say(22)}</button><button type="button" class="sp-ghost" data-help>${icons.help(22)}</button><button type="button" class="sp-ghost" data-pass>${icons.pass(22)}</button></div>`;
   const crew = el.querySelector<HTMLElement>('.sp-pilot')!;
   const bob = el.querySelector<HTMLElement>('.sp-bob')!;
   const shape = el.querySelector<HTMLElement>('.sp-shape')!;
   const pill = el.querySelector<HTMLElement>('.sp-pill')!;
   const prompt = el.querySelector<HTMLElement>('.sp-prompt')!;
   const objs = el.querySelector<HTMLElement>('.sp-objs')!;
+  const say = el.querySelector<HTMLButtonElement>('[data-say]')!;
   const help = el.querySelector<HTMLButtonElement>('[data-help]')!;
   const pass = el.querySelector<HTMLButtonElement>('[data-pass]')!;
   const buttons: [AnswerButton, AnswerButton] = [createAnswerButton(0), createAnswerButton(1)];
@@ -49,6 +50,7 @@ export function createStation(slot: number, geo: Geo): Station {
         el.classList.add(`sp-p${player}`);
         set(el, 'aria-label', `Player ${player + 1}`);
         shape.innerHTML = shapeMarker(player, 26);
+        set(say, 'aria-label', `Say ${pilotColors[player].name.split(' ')[0]}'s question`); say.dataset.say = String(player);
         set(help, 'aria-label', `Help player ${player + 1}`); help.dataset.help = String(player);
         set(pass, 'aria-label', `Pass player ${player + 1}`); pass.dataset.pass = String(player);
       }
@@ -78,6 +80,7 @@ export function createStation(slot: number, geo: Geo): Station {
         const look: AnswerLook = outcome === 'correct' ? side === q.correct ? 'right' : 'dim' : outcome === 'passed' ? 'dim' : tried && side !== q.correct ? 'try' : state.paused ? 'idle' : 'ready';
         buttons[side].update({ player, value: q.choices[side], picture: state.picture && q.kind === 'add', look, disabled: done || state.paused });
       });
+      say.disabled = state.paused;
       help.disabled = pass.disabled = done || state.paused;
     },
     press(side) { buttons[side].press(); },

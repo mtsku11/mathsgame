@@ -66,6 +66,7 @@ export function createMoments(targets: MomentTargets): Moments {
       flying--;
       hub.release(1);
       if (landed) {
+        events.emit('starLanded');
         pulseCore(false);
         burst(to.x, to.y, { count: 12, size: [12, 22], speed: [90, 220], life: [0.4, 0.75] });
       }

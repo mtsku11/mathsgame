@@ -4,6 +4,11 @@ import { createHash } from 'node:crypto';
 const files = (await readdir('dist', { recursive: true, withFileTypes: true }))
   .filter(entry => entry.isFile() && entry.name !== 'sw.js')
   .map(entry => `${entry.parentPath}/${entry.name}`.replace(/^dist\//, '')).sort();
+// The build fails if any file the audio manifest names is missing, so the offline cache can never silently lack a sound.
+const manifest = JSON.parse(await readFile('dist/audio/manifest.json', 'utf8'));
+const audio = [...Object.values(manifest.music).flatMap(entry => entry.src), ...manifest.sfx.src, ...manifest.voice.src, 'audio/manifest.json'];
+const absent = audio.filter(file => !files.includes(file));
+if (absent.length) throw new Error(`Audio files missing from dist: ${absent.join(', ')}`);
 const hash = createHash('sha256');
 for (const file of files) hash.update(await readFile(`dist/${file}`));
 const version = hash.digest('hex').slice(0, 16);

@@ -1,11 +1,12 @@
-import type { Side } from '../game/questions';
+import type { Question, Side } from '../game/questions';
 
 export type BoostTheme = 'fireworkFrenzy' | 'warpDrive' | 'bubbleBlast';
 export type BoostTier = 1 | 2 | 3;
 export interface GameEvents {
   answerCorrect: { player: number; side: Side };
   answerTry: { player: number; side: Side };
-  turnHelped: { player: number };
+  // count is how many objects the helper numbers run to.
+  turnHelped: { player: number; count: number };
   turnPassed: { player: number };
   roundReady: { round: number };
   roundStart: { round: number };
@@ -17,6 +18,16 @@ export interface GameEvents {
   boostEnd: { tier: BoostTier };
   destinationReached: { destination: 0 | 1 | 2 };
   missionComplete: { stars: number };
+  boostCount: { n: 1 | 2 | 3 };
+  // The Warp Drive finale after round 6 has reached home; destinationReached covers every other arrival.
+  homeReached: void;
+  starLanded: void;
+  switchChecked: { player: number; side: Side };
+  sayQuestion: { player: number; question: Question };
+  screen: { name: 'title' | 'legacy' | 'play' | 'finale' };
+  gamePaused: void;
+  gameResumed: void;
+  uiClick: void;
 }
 
 type Handler<T> = (payload: T) => void;

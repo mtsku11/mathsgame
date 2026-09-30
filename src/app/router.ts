@@ -5,7 +5,7 @@ export interface Router<N extends string> {
   current(): N | null;
 }
 
-export function createRouter<N extends string>(container: HTMLElement): Router<N> {
+export function createRouter<N extends string>(container: HTMLElement, onChange?: (name: N) => void): Router<N> {
   const screens = new Map<N, Screen>();
   let current: N | null = null;
   return {
@@ -17,6 +17,7 @@ export function createRouter<N extends string>(container: HTMLElement): Router<N
       container.replaceChildren();
       current = name;
       next.mount(container);
+      onChange?.(name);
     },
     current: () => current,
   };

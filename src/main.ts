@@ -12,6 +12,7 @@ import { InputFilter, type Pair } from './input/normalize';
 import { Calibration, ConnectionHistory, describeDevice, readDevices, down, type Binding, type Device } from './input/gamepad';
 import { marker, markers, rocket, planet } from './ui/art';
 import { TransitionTimer } from './game/transition';
+import { createAudio } from './audio/audio';
 import { registerOffline } from './offline/register';
 import { events } from './app/events';
 import { createRouter, type Screen } from './app/router';
@@ -36,6 +37,7 @@ document.body.append(announcer);
 const settings = loadSettings();
 setReducedMotion(settings.reduced);
 setLowStim(settings.lowStim);
+const audio = createAudio(settings);
 let legacyActive = false;
 type View = 'setup' | 'controls' | 'practice' | 'play' | 'results';
 let screen: View = 'setup';
@@ -60,7 +62,6 @@ let filter = new InputFilter(settings.players.map(player => player.cooldown));
 let random = seededRandom(Date.now());
 const keys = new Set<string>();
 const transition = new TransitionTimer();
-let audio: AudioContext | null = null;
 let lastDiagnostic = '';
 let readyRound = 0;
 let lastFrame = 0;
@@ -91,23 +92,10 @@ function missionAnnouncement(): string {
   const prompt = question.kind === 'count' ? 'How many objects?' : `${question.groups.join(' plus ')} equals what?`;
   return `Player ${player + 1}. ${prompt} Left answer ${question.choices[0]}. Right answer ${question.choices[1]}.`;
 }
-function sound(): void {
-  if (settings.quiet || settings.effectsVolume === 0 || !audio || audio.state !== 'running') return;
-  const oscillator = audio.createOscillator();
-  const gain = audio.createGain();
-  oscillator.frequency.setValueAtTime(523.25, audio.currentTime);
-  oscillator.frequency.exponentialRampToValueAtTime(783.99, audio.currentTime + 0.16);
-  gain.gain.setValueAtTime(0.035 * settings.effectsVolume / 100, audio.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001 * settings.effectsVolume / 100, audio.currentTime + 0.25);
-  oscillator.connect(gain); gain.connect(audio.destination);
-  oscillator.start(); oscillator.stop(audio.currentTime + 0.26);
-  oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
-}
-function enableAudio(): void {
-  if (!settings.quiet) { audio ??= new AudioContext(); void audio.resume().catch(() => { notice = 'Sound is unavailable. All feedback is also shown on screen.'; }); }
-}
 function volumeControl(): string {
-  return `<label>Effects volume<select id="effects-volume" aria-describedby="volume-note">${[0, 25, 50, 75, 100].map(value => `<option value="${value}" ${selected(settings.effectsVolume === value)}>${value === 0 ? 'Off' : `${value}%`}</option>`).join('')}</select></label><p id="volume-note" class="muted">Quiet mode mutes effects at every volume.</p>`;
+  const select = (id: string, label: string, value: number, describe = ''): string =>
+    `<label>${label} volume<select id="${id}-volume"${describe}>${[0, 25, 50, 75, 100].map(level => `<option value="${level}" ${selected(value === level)}>${level === 0 ? 'Off' : `${level}%`}</option>`).join('')}</select></label>`;
+  return `<div class="form-row">${select('effects', 'Effects', settings.effectsVolume, ' aria-describedby="volume-note"')}${select('music', 'Music', settings.musicVolume)}${select('voice', 'Voice', settings.voiceVolume)}</div><div class="checks"><label><input id="narration" type="checkbox" ${checked(settings.narration)}> Voice narration</label></div><p id="volume-note" class="muted">Quiet mode mutes all sound at every volume.</p>`;
 }
 function boostSettings(): string {
   const { boost } = settings;
@@ -160,7 +148,7 @@ function playState(): PlayState {
     next: !resolved || boostRun.flow === 'running' ? null : boostRun.flow === 'waiting' ? 'Boost round!' : settings.enlarged && current.active < settings.count - 1 ? 'Next player' : current.round === 6 ? 'Finish journey' : 'Next round',
     destination: Math.max(destinationOf(current.round), boostRun.arrival ?? 0) as 0 | 1 | 2, perfect: current.turns.every(turn => turn.outcome === 'correct'),
     turn: settings.enlarged ? `Player ${current.active + 1} of ${settings.count}` : '',
-    pause: { paused, reason: pauseReason, recovering, quiet: settings.quiet, volume: settings.effectsVolume, boost: boostRun.flow === 'running' },
+    pause: { paused, reason: pauseReason, recovering, quiet: settings.quiet, volume: settings.effectsVolume, music: settings.musicVolume, voice: settings.voiceVolume, narration: settings.narration, boost: boostRun.flow === 'running' },
   };
 }
 function finaleState(): FinaleState {
@@ -198,7 +186,7 @@ function updateDiagnostics(): void {
 }
 function pause(reason = ''): void {
   if (screen !== 'play' || paused) return;
-  paused = true; transition.suspend(); pauseReason = reason; resetInput(); boostRun.pause(performance.now()); render();
+  paused = true; transition.suspend(); pauseReason = reason; resetInput(); boostRun.pause(performance.now()); events.emit('gamePaused'); render();
 }
 function enter(next: View): void {
   screen = next;
@@ -216,7 +204,7 @@ function newJourneySetup(): void {
 function perform(action: string): void {
   switch (action) {
     case 'home': if (screen === 'play') pause(); else if (!recovering) { session = null; enter('setup'); } return;
-    case 'prepare': notice = saveSettings(settings) ? '' : 'Preferences cannot be saved in this browser; this session will still work.'; enableAudio(); newJourneySetup(); return;
+    case 'prepare': notice = saveSettings(settings) ? '' : 'Preferences cannot be saved in this browser; this session will still work.'; newJourneySetup(); return;
     case 'setup': session = null; paused = false; recovering = false; calibration = null; boostRun.reset(); resetInput(); enter('setup'); return;
     case 'controls': calibration = null; enter('controls'); return;
     case 'clear-bindings': bindings = emptyBindings(); calibration = null; calibrationTarget = null; render(); return;
@@ -230,15 +218,15 @@ function perform(action: string): void {
       announce(missionAnnouncement()); return;
     case 'pause': pause(); return;
     case 'resume':
-      paused = false; pauseReason = ''; resetInput(); boostRun.resume(performance.now(), readRaw()); render();
+      paused = false; pauseReason = ''; resetInput(); boostRun.resume(performance.now(), readRaw()); events.emit('gameResumed'); render();
       (app.querySelector<HTMLElement>('.sp-boost-pause') ?? app.querySelector<HTMLElement>('[data-action="pause"]'))?.focus();
       announce(missionAnnouncement());
       return;
-    case 'pause-back': paused = true; enter('play'); return;
+    case 'pause-back': paused = true; enter('play'); events.emit('gamePaused'); return;
     case 'reconnect': bindings = emptyBindings(); calibration = null; boostRun.interrupt(); enter('controls'); return;
     case 'skip-boost':
       if (boostRun.flow !== 'running') return;
-      paused = false; pauseReason = ''; boostRun.skip(); resetInput(); render(); return;
+      paused = false; pauseReason = ''; events.emit('gameResumed'); boostRun.skip(); resetInput(); render(); return;
     case 'next':
       if (session && !paused) {
         if (boostRun.flow === 'waiting') { boostRun.start(readRaw(), performance.now()); render(); return; }
@@ -247,7 +235,7 @@ function perform(action: string): void {
         const reached = boostRun.arrival;
         if (!advance(session, presets(), random, settings.enlarged)) return;
         transition.reset(); flashes = ['', '', '', '']; resetInput();
-        if (session.finished) { sound(); enter('results'); events.emit('missionComplete', { stars: session.stars }); }
+        if (session.finished) { enter('results'); events.emit('missionComplete', { stars: session.stars }); }
         else {
           if (session.round !== from) {
             boostRun.newRound();
@@ -260,24 +248,25 @@ function perform(action: string): void {
       } return;
     case 'replay': newJourneySetup(); return;
     case 'finish': if (window.confirm('End this journey? Current crew stars will be cleared.')) perform('setup'); return;
-    case 'sound': settings.quiet = !settings.quiet; enableAudio(); saveSettings(settings); render(); return;
+    case 'sound': settings.quiet = !settings.quiet; saveSettings(settings); audio.refresh(); render(); return;
     case 'update': applyUpdate?.(); return;
   }
 }
 app.addEventListener('click', event => {
   const button = (event.target as HTMLElement).closest<HTMLElement>('button, a[data-action]');
   if (!button || button.hasAttribute('disabled')) return;
-  if (button.dataset.action) { event.preventDefault(); perform(button.dataset.action); return; }
+  if (button.dataset.action) { event.preventDefault(); if (button.dataset.action !== 'pause' && button.dataset.action !== 'resume') events.emit('uiClick'); perform(button.dataset.action); return; }
   if (button.dataset.mapPlayer !== undefined) {
     calibrationTarget = [Number(button.dataset.mapPlayer), Number(button.dataset.mapSide) as Side];
     bindings[calibrationTarget[0]][calibrationTarget[1]] = null; calibration = new Calibration(); render(); return;
   }
   if (button.dataset.answerPlayer !== undefined) { pulses[Number(button.dataset.answerPlayer)][Number(button.dataset.answerSide)] = true; return; }
+  if (session && !paused && button.dataset.say !== undefined) events.emit('sayQuestion', { player: Number(button.dataset.say), question: session.turns[Number(button.dataset.say)].question });
   if (session && !paused && button.dataset.help !== undefined) {
     const player = Number(button.dataset.help), turn = session.turns[player];
     const first = turn.outcome === 'waiting' && !turn.supported;
     turn.supported = true;
-    if (first) events.emit('turnHelped', { player });
+    if (first) events.emit('turnHelped', { player, count: turn.question.groups.reduce((a, b) => a + b, 0) });
     render(); announce(`Player ${player + 1}. Count together for help.`);
   }
   if (session && !paused && button.dataset.pass !== undefined) {
@@ -310,14 +299,17 @@ app.addEventListener('change', event => {
       app.querySelector('.notice')!.textContent = notice;
     } else { settings.players[player].keys[side] = target.value; notice = ''; app.querySelector('.notice')!.textContent = ''; }
   }
-  if (target.id === 'effects-volume') { settings.effectsVolume = Number(target.value); saveSettings(settings); }
-  if (target.id === 'quiet') { settings.quiet = target.checked; enableAudio(); }
+  if (target.id === 'effects-volume') { settings.effectsVolume = Number(target.value); saveSettings(settings); audio.refresh(); audio.preview('effects'); }
+  if (target.id === 'music-volume') { settings.musicVolume = Number(target.value); saveSettings(settings); audio.refresh(); }
+  if (target.id === 'voice-volume') { settings.voiceVolume = Number(target.value); saveSettings(settings); audio.refresh(); audio.preview('voice'); }
+  if (target.id === 'narration') { settings.narration = target.checked; saveSettings(settings); audio.refresh(); }
+  if (target.id === 'quiet') { settings.quiet = target.checked; audio.refresh(); }
   if (target.id === 'reduced') { settings.reduced = target.checked; setReducedMotion(target.checked); }
   if (target.id === 'simple') settings.simple = target.checked;
 });
 window.addEventListener('keydown', event => {
   if (paused && event.key === 'Tab') {
-    const focusable = Array.from(app.querySelectorAll<HTMLElement>('.pause-dialog button, .pause-dialog select'));
+    const focusable = Array.from(app.querySelectorAll<HTMLElement>('.pause-dialog button:not([hidden]), .pause-dialog select, .pause-dialog input'));
     if (event.shiftKey && document.activeElement === focusable[0]) { event.preventDefault(); focusable.at(-1)!.focus(); }
     else if (!event.shiftKey && document.activeElement === focusable.at(-1)) { event.preventDefault(); focusable[0].focus(); }
   }
@@ -377,6 +369,7 @@ function frame(now: number): void {
     for (const { pupil, side } of actions) {
       if (pupil >= settings.count) continue;
       flashes[pupil] = `${side ? 'Right' : 'Left'} switch connected.`;
+      events.emit('switchChecked', { player: pupil, side });
       announcements.push(`Player ${pupil + 1}. ${flashes[pupil]}`);
       if (mode === 'keyboard' || raw[pupil][side]) pendingTests[pupil][side] = true;
       changed = true;
@@ -388,7 +381,7 @@ function frame(now: number): void {
     for (const { pupil, side } of actions) {
       if (pupil >= settings.count || (settings.enlarged && pupil !== session.active) || session.turns[pupil].outcome !== 'waiting') continue;
       play.press(pupil, side);
-      if (answer(session, pupil, side)) { sound(); events.emit('answerCorrect', { player: pupil, side }); announcements.push(`Player ${pupil + 1}. Star sent. Thank you!`); }
+      if (answer(session, pupil, side)) { events.emit('answerCorrect', { player: pupil, side }); announcements.push(`Player ${pupil + 1}. Star sent. Thank you!`); }
       else { events.emit('answerTry', { player: pupil, side }); flashes[pupil] = 'Let’s count together. You can try again.'; announcements.push(`Player ${pupil + 1}. ${flashes[pupil]}`); }
       changed = true;
     }
@@ -400,7 +393,7 @@ function frame(now: number): void {
   if (changed) { render(); if (announcements.length) announce(announcements.join(' ')); }
   requestAnimationFrame(frame);
 }
-const router = createRouter<'title' | 'legacy' | 'play' | 'finale'>(app);
+const router = createRouter<'title' | 'legacy' | 'play' | 'finale'>(app, name => events.emit('screen', { name }));
 const play = createPlayScreen(playState, { quality: settings.quality, onBoostTap: player => { if (pulses[player]) pulses[player][0] = true; } });
 const boostRun = createBoostRun({
   settings, view: play.boost, calm: isCalm, announce, round: () => session?.round ?? 1, stars: () => session?.stars ?? 0,

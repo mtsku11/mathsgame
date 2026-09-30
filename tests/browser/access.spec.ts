@@ -98,57 +98,38 @@ test('one stable live region announces the active enlarged turn and feedback', a
 });
 
 test('quiet play stays silent and teacher can enable and disable local sound', async ({ page }) => {
-  await page.addInitScript(() => {
-    const original = AudioContext.prototype.createOscillator;
-    (window as any).createdTones = 0;
-    (window as any).gainPeaks = [];
-    const createGain = AudioContext.prototype.createGain;
-    AudioContext.prototype.createGain = function () {
-      const node = createGain.call(this);
-      const setValue = node.gain.setValueAtTime.bind(node.gain);
-      node.gain.setValueAtTime = (value, time) => {
-        (window as any).gainPeaks.push(value);
-        return setValue(value, time);
-      };
-      return node;
-    };
-    AudioContext.prototype.createOscillator = function () {
-      (window as any).createdTones++;
-      return original.call(this);
-    };
-  });
-  await startGame(page, { count: 3, quiet: true });
+  // Answer sounds are the 'press' effect (sprite gain 0.6) at the effects volume; the volume preview plays a 'correct' chime, so 'press' counts only answers.
+  const presses = async (): Promise<number[]> => (await page.evaluate(() => (window as any).__NC_AUDIO__.log as { channel: string; action: string; id: string; volume: number }[]))
+    .filter(entry => entry.channel === 'sfx' && entry.action === 'play' && entry.id === 'press').map(entry => Number(entry.volume.toFixed(3)));
+  const anything = async (): Promise<number> => (await page.evaluate(() => (window as any).__NC_AUDIO__.log as { action: string }[])).filter(entry => entry.action === 'play').length;
   const answerPlayer = async (index: number) => {
     await page.waitForTimeout(150);
     await answerCorrectly(page, index);
   };
+  const pauseWith = async (name: string, volume?: string) => {
+    await page.getByRole('button', { name: 'Pause game' }).click();
+    if (name) await page.getByRole('button', { name }).click();
+    if (volume) await page.getByLabel('Effects volume').selectOption(volume);
+    await page.getByRole('button', { name: 'Resume journey', exact: true }).click();
+  };
+  await startGame(page, { count: 3, quiet: true, url: './?silentaudio' });
+  await page.evaluate(() => (window as any).__NC_AUDIO__.clear());
   await answerPlayer(0);
-  expect(await page.evaluate(() => (window as any).createdTones)).toBe(0);
-  await page.getByRole('button', { name: 'Pause game' }).click();
-  await page.getByRole('button', { name: 'Enable gentle sound' }).click();
-  await page.getByLabel('Effects volume').selectOption('50');
-  await page.getByRole('button', { name: 'Resume journey', exact: true }).click();
+  expect(await anything()).toBe(0);
+  await pauseWith('Enable gentle sound', '50');
   await answerPlayer(1);
-  expect(await page.evaluate(() => (window as any).createdTones)).toBe(1);
-  await page.getByRole('button', { name: 'Pause game' }).click();
-  expect(await page.evaluate(() => (window as any).gainPeaks)).toEqual([0.0175]);
-  await page.getByRole('button', { name: 'Turn sound off' }).click();
-  await page.getByLabel('Effects volume').selectOption('100');
-  await page.getByRole('button', { name: 'Resume journey', exact: true }).click();
+  expect(await presses()).toEqual([0.3]);
+  await pauseWith('Turn sound off', '100');
+  const before = await anything();
   await answerPlayer(2);
-  expect(await page.evaluate(() => (window as any).createdTones)).toBe(1);
+  expect(await anything()).toBe(before);
   await nextButton(page).click();
-  await page.getByRole('button', { name: 'Pause game' }).click();
-  await page.getByRole('button', { name: 'Enable gentle sound' }).click();
-  await page.getByLabel('Effects volume').selectOption('0');
-  await page.getByRole('button', { name: 'Resume journey', exact: true }).click();
+  await pauseWith('Enable gentle sound', '0');
   await answerPlayer(0);
-  expect(await page.evaluate(() => (window as any).createdTones)).toBe(1);
-  await page.getByRole('button', { name: 'Pause game' }).click();
-  await page.getByLabel('Effects volume').selectOption('100');
-  await page.getByRole('button', { name: 'Resume journey', exact: true }).click();
+  expect(await presses()).toEqual([0.3]);
+  await pauseWith('', '100');
   await answerPlayer(1);
-  expect(await page.evaluate(() => (window as any).gainPeaks)).toEqual([0.0175, 0.035]);
+  expect(await presses()).toEqual([0.3, 0.6]);
 });
 
 for (const viewport of [{ width: 390, height: 844 }, { width: 640, height: 360 }]) {
@@ -168,6 +149,12 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 640, height: 360 }
     await expect(page.getByRole('button', { name: 'Turn sound off' })).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(page.getByLabel('Effects volume')).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.getByLabel('Music volume')).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.getByLabel('Voice volume')).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.getByLabel('Voice narration')).toBeFocused();
     await page.keyboard.press('Tab');
     const end = page.getByRole('button', { name: 'End journey & return to setup' });
     await expect(end).toBeFocused();

@@ -4,6 +4,7 @@ const line = 'fill="none" stroke="currentColor" stroke-linecap="round" stroke-li
 export const icons = {
   pause: (size = 22): string => svg(size, '<rect x="5" y="4" width="5" height="16" rx="1.6" fill="currentColor"/><rect x="14" y="4" width="5" height="16" rx="1.6" fill="currentColor"/>'),
   help: (size = 20): string => svg(size, '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.6"/><path d="m5.6 5.6 3.9 3.9M14.5 14.5l3.9 3.9M18.4 5.6l-3.9 3.9M9.5 14.5l-3.9 3.9"/>', `${line} stroke-width="2.4"`),
+  say: (size = 20): string => svg(size, '<path d="M4 9.5v5h3.6l4.9 4.5V5L7.6 9.5z"/><path d="M16 9a4.2 4.2 0 0 1 0 6M18.8 6.4a8 8 0 0 1 0 11.2"/>', `${line} stroke-width="2.2"`),
   pass: (size = 20): string => svg(size, '<path d="m5 6 6 6-6 6M13 6l6 6-6 6"/>', `${line} stroke-width="2.4"`),
   chevL: (size = 18): string => svg(size, '<path d="m15 5-7 7 7 7"/>', `${line} stroke-width="3.2"`),
   chevR: (size = 18): string => svg(size, '<path d="m9 5 7 7-7 7"/>', `${line} stroke-width="3.2"`),
