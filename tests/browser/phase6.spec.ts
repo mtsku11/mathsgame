@@ -89,7 +89,7 @@ test('the Graphics setting chooses the quality level and low power flags the pag
 
 test('the startup benchmark maps timings to a quality level', async ({ page }) => {
   await page.goto('./');
-  const levels = await nc(page, ({ pixi }) => [{ workMs: 5, frameMs: 16.7 }, { workMs: 50, frameMs: 16.7 }, { workMs: 10, frameMs: 22 }, { workMs: 120, frameMs: 16.7 }, { workMs: 10, frameMs: 40 }].map(sample => pixi.pickLevel(sample)));
+  const levels = await nc(page, ({ pixi }) => [{ workMs: 5, frameMs: 16.7 }, { workMs: 130, frameMs: 16.7 }, { workMs: 10, frameMs: 22 }, { workMs: 200, frameMs: 16.7 }, { workMs: 10, frameMs: 40 }].map(sample => pixi.pickLevel(sample)));
   expect(levels).toEqual(['high', 'medium', 'medium', 'low', 'low']);
 });
 

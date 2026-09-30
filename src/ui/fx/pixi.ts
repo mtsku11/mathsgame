@@ -15,22 +15,28 @@ let measured: QualityLevel | null = null;
 export const resolveQuality = (quality: Quality): QualityLevel => quality === 'auto' ? measured ?? 'high' : quality;
 export interface BenchSample { workMs: number; frameMs: number }
 export let lastBenchmark: (BenchSample & { level: QualityLevel }) | null = null;
-// workMs: a fixed canvas workload; frameMs: the average animation-frame gap while it was idle. Either being slow drops a level.
+// workMs: a fixed canvas workload; frameMs: the median animation-frame gap while it was idle. Either being slow drops a level.
 export function pickLevel({ workMs, frameMs }: BenchSample): QualityLevel {
-  if (workMs > 90 || frameMs > 28) return 'low';
-  if (workMs > 40 || frameMs > 20) return 'medium';
+  if (workMs > 160 || frameMs > 28) return 'low';
+  if (workMs > 100 || frameMs > 20) return 'medium';
   return 'high';
 }
 const frames = (count: number): Promise<number> => new Promise(resolve => {
   const times: number[] = [];
-  const tick = (time: number): void => { times.push(time); if (times.length > count) resolve((times.at(-1)! - times[0]) / count); else requestAnimationFrame(tick); };
+  // The median gap ignores the hitches of the page's own start-up.
+  const tick = (time: number): void => {
+    times.push(time);
+    if (times.length <= count) { requestAnimationFrame(tick); return; }
+    const gaps = times.slice(1).map((t, i) => t - times[i]).sort((x, y) => x - y);
+    resolve(gaps[Math.floor(gaps.length / 2)]);
+  };
   requestAnimationFrame(tick);
 });
 // 400 gradient fills in eight slices, one per animation frame, so the benchmark never holds the main thread long enough to miss a switch press.
 async function workload(): Promise<number> {
   const canvas = document.createElement('canvas');
   canvas.width = 1280; canvas.height = 720;
-  const g = canvas.getContext('2d');
+  const g = canvas.getContext('2d', { willReadFrequently: true });
   if (!g) return Infinity;
   let total = 0;
   for (let slice = 0; slice < 8; slice++) {
