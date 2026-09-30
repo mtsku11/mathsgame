@@ -166,7 +166,9 @@ export function createBoostScreen(env: BoostEnv): BoostScreen {
     gsap.to(r.hud, { opacity: 0, duration: seconds });
     const done = (): void => { leaving.delete(done); teardown(r); env.root.classList.remove('is-boosting'); env.root.inert = false; };
     leaving.add(done);
-    unmountScene(r);
+    // A finished boost fades its scene out with the stage coming back, so a backdrop such as the fireworks' horizon never vanishes in a single frame.
+    // A skipped one is cut at once: the teacher asked for it to stop.
+    if (fast) unmountScene(r); else gsap.to(r.world, { opacity: 0, duration: seconds, ease: 'power1.in', overwrite: 'auto' });
     gsap.delayedCall(seconds + (r.stationMoves.length ? 0.35 : 0) + (calm || fast ? 0 : 0.2), done);
   }
 
