@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { openSetup } from '../helpers';
 
 async function press(page: Page, buttons: number[]) {
   await page.evaluate(buttons => window.dispatchEvent(new CustomEvent('mock-buttons', { detail: buttons })), buttons);
@@ -45,7 +46,7 @@ for (const count of [1, 2, 3, 4]) {
         if (connected) slot = 2;
       });
     });
-    await page.goto('./');
+    await openSetup(page);
     await page.getByLabel('Crew size').selectOption(String(count));
     await page.getByRole('button', { name: 'Set up the switches' }).click();
     await expect(page.locator('#diagnostic-text')).toContainText('8 buttons · 2 axes');

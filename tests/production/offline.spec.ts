@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { openSetup, enterSetup } from '../helpers';
 import { createServer, type Server } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { resolve, extname } from 'node:path';
@@ -29,10 +30,11 @@ test.afterAll(async () => { await new Promise<void>((done, reject) => server.clo
 test('production reloads offline, completes a mission, and defers updates until the finale', async ({ page, context }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
-  await page.goto(origin);
+  await openSetup(page, origin);
   await expect(page.locator('#offline-status')).toHaveText('Ready offline');
   await context.setOffline(true);
   await page.reload();
+  await enterSetup(page);
   await expect(page.locator('#offline-status')).toHaveText('Ready offline');
   expect(await page.evaluate(() => navigator.onLine)).toBe(false);
   await page.getByLabel('Crew size').selectOption('4');
@@ -66,11 +68,12 @@ test('production reloads offline, completes a mission, and defers updates until 
     await page.getByRole('button', { name: round === 6 ? 'Finish journey' : 'Next round' }).click();
   }
   await page.getByRole('button', { name: 'Update game now' }).click();
-  await expect(page.getByLabel('Crew size')).toBeVisible();
+  await enterSetup(page);
   await expect(page.locator('#offline-status')).toHaveText('Ready offline');
   expect(await page.evaluate(async () => (await navigator.serviceWorker.getRegistration())!.waiting === null)).toBe(true);
   await context.setOffline(true);
   await page.reload();
+  await enterSetup(page);
   await expect(page.locator('#offline-status')).toHaveText('Ready offline');
   expect(errors).toEqual([]);
 });

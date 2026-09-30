@@ -1,10 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { openSetup } from '../helpers';
 
 for (const count of [1, 2, 3, 4]) {
   for (const enlarged of [false, true]) {
     test(`${count} pupils ${enlarged ? 'enlarged' : 'simultaneous'} retain controls and large targets at 720p`, async ({ page }) => {
       await page.setViewportSize({ width: 1280, height: 720 });
-      await page.goto('./');
+      await openSetup(page);
       await page.getByLabel('Crew size').selectOption(String(count));
       await page.getByLabel('Screen layout').selectOption(enlarged ? 'enlarged' : 'together');
       for (let i = 1; i <= count; i++) await page.getByLabel(`Player ${i} maths`).selectOption('add10');

@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { openSetup, enterSetup } from '../helpers';
 
 test('anonymous comfort and input preferences survive reload while a new session starts fresh', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('./');
+  await openSetup(page);
   await page.getByText('Comfort & access settings', { exact: true }).click();
   await expect(page.getByLabel('Reduce motion')).toBeChecked();
   await expect(page.getByLabel('Quiet mode')).not.toBeChecked();
@@ -21,6 +22,7 @@ test('anonymous comfort and input preferences survive reload while a new session
   expect(await page.locator('.answer').first().evaluate(element => getComputedStyle(element).transitionDuration)).toBe('0s');
   expect(await page.locator('.route').evaluate(element => getComputedStyle(element).visibility)).toBe('hidden');
   await page.reload();
+  await enterSetup(page);
   await page.getByText('Comfort & access settings', { exact: true }).click();
   await expect(page.getByLabel('Player 1 left key')).toHaveValue('KeyZ');
   await expect(page.getByLabel('Input cooldown').first()).toHaveValue('1000');
@@ -41,13 +43,14 @@ test('anonymous comfort and input preferences survive reload while a new session
     localStorage.setItem('number-crew-settings-v2', JSON.stringify(legacy));
   });
   await page.reload();
+  await enterSetup(page);
   await page.getByText('Comfort & access settings', { exact: true }).click();
   await expect(page.getByLabel('Effects volume')).toHaveValue('75');
   await expect(page.getByLabel('Player 1 left key')).toHaveValue('KeyZ');
 });
 
 test('reduced motion keeps cargo and destination progress visible without travel', async ({ page }) => {
-  await page.goto('./');
+  await openSetup(page);
   await page.getByLabel('Crew size').selectOption('4');
   await page.getByText('Comfort & access settings', { exact: true }).click();
   await page.getByLabel('Reduce motion').check();
@@ -74,7 +77,7 @@ test('reduced motion keeps cargo and destination progress visible without travel
 });
 
 test('one stable live region announces the active enlarged turn and feedback', async ({ page }) => {
-  await page.goto('./');
+  await openSetup(page);
   await page.getByLabel('Crew size').selectOption('4');
   await page.getByLabel('Screen layout').selectOption('enlarged');
   await page.getByLabel('Keyboard & on-screen buttons').check();
@@ -119,7 +122,7 @@ test('quiet play stays silent and teacher can enable and disable local sound', a
       return original.call(this);
     };
   });
-  await page.goto('./');
+  await openSetup(page);
   await page.getByLabel('Crew size').selectOption('3');
   await page.getByText('Comfort & access settings', { exact: true }).click();
   await page.getByLabel('Quiet mode').check();
@@ -166,7 +169,7 @@ test('quiet play stays silent and teacher can enable and disable local sound', a
 for (const viewport of [{ width: 390, height: 844 }, { width: 640, height: 360 }]) {
   test(`teacher controls remain reachable at ${viewport.width}x${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport);
-    await page.goto('./');
+    await openSetup(page);
     await page.getByText('Comfort & access settings', { exact: true }).click();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.getByLabel('Screen layout').selectOption('enlarged');

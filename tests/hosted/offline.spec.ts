@@ -1,13 +1,15 @@
 import { test, expect } from '@playwright/test';
+import { openSetup, enterSetup } from '../helpers';
 
 test('published game reloads offline and completes all six rounds', async ({ page, context }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
-  await page.goto('./');
+  await openSetup(page);
   await expect(page.locator('#offline-status')).toHaveText('Ready offline');
   expect(await page.evaluate(async () => (await navigator.serviceWorker.getRegistration())!.scope)).toBe(new URL('./', page.url()).href);
   await context.setOffline(true);
   await page.reload();
+  await enterSetup(page);
   await expect(page.locator('#offline-status')).toHaveText('Ready offline');
   expect(await page.evaluate(() => navigator.onLine)).toBe(false);
   await page.getByLabel('Crew size').selectOption('4');

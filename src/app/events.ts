@@ -1,0 +1,49 @@
+import type { Side } from '../game/questions';
+
+export type BoostTheme = 'fireworkFrenzy' | 'warpDrive' | 'bubbleBlast';
+export type BoostTier = 1 | 2 | 3;
+export interface GameEvents {
+  answerCorrect: { player: number; side: Side };
+  answerTry: { player: number; side: Side };
+  turnHelped: { player: number };
+  turnPassed: { player: number };
+  roundReady: { round: number };
+  roundStart: { round: number };
+  boostStart: { round: number; theme: BoostTheme };
+  boostGo: void;
+  boostPress: { player: number; side: Side };
+  boostTier: { tier: BoostTier };
+  boostFinale: { tier: BoostTier };
+  boostEnd: { tier: BoostTier };
+  destinationReached: { destination: 0 | 1 | 2 };
+  missionComplete: { stars: number };
+}
+
+type Handler<T> = (payload: T) => void;
+type Payload<T> = [T] extends [void] ? [] : [T];
+export interface EventBus<E> {
+  on<K extends keyof E>(name: K, handler: Handler<E[K]>): () => void;
+  off<K extends keyof E>(name: K, handler: Handler<E[K]>): void;
+  emit<K extends keyof E>(name: K, ...payload: Payload<E[K]>): void;
+}
+
+export function createBus<E>(): EventBus<E> {
+  const handlers = new Map<keyof E, Set<Handler<never>>>();
+  const off = <K extends keyof E>(name: K, handler: Handler<E[K]>): void => { handlers.get(name)?.delete(handler as Handler<never>); };
+  return {
+    on(name, handler) {
+      const set = handlers.get(name) ?? new Set();
+      set.add(handler as Handler<never>);
+      handlers.set(name, set);
+      return () => off(name, handler);
+    },
+    off,
+    emit(name, ...payload) {
+      for (const handler of [...handlers.get(name) ?? []]) {
+        try { (handler as Handler<unknown>)(payload[0]); } catch (error) { console.error(`Event handler for "${String(name)}" failed`, error); }
+      }
+    },
+  };
+}
+
+export const events = createBus<GameEvents>();

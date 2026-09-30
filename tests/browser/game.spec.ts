@@ -1,7 +1,8 @@
 import { test, expect, type Page } from '@playwright/test';
+import { openSetup } from '../helpers';
 
 async function start(page: Page, enlarged = false) {
-  await page.goto('./');
+  await openSetup(page);
   await page.getByLabel('Crew size').selectOption('4');
   if (enlarged) await page.getByLabel('Screen layout').selectOption('enlarged');
   await page.getByLabel('Keyboard & on-screen buttons').check();
@@ -100,7 +101,7 @@ test('fresh simultaneous keys affect each pupil without held repeats across a ro
 
 for (const count of [3, 4]) {
   test(`${count} pupils answer a mixed-maths mission, retry and replay`, async ({ page }) => {
-    await page.goto('./');
+    await openSetup(page);
     await page.getByLabel('Crew size').selectOption(String(count));
     await page.getByLabel('Player 2 maths').selectOption('add5');
     await page.getByLabel('Player 3 maths').selectOption('add10');
@@ -144,7 +145,7 @@ for (const count of [3, 4]) {
 
 for (const count of [1, 2]) {
   test(`${count} player${count > 1 ? 's' : ''} answer six rounds and see only their own stations`, async ({ page }) => {
-    await page.goto('./');
+    await openSetup(page);
     await page.getByLabel('Crew size').selectOption(String(count));
     await page.getByLabel('Keyboard & on-screen buttons').check();
     await page.getByRole('button', { name: 'Enter practice' }).click();
@@ -168,7 +169,7 @@ for (const count of [1, 2]) {
 }
 
 test('automatic completed rounds freeze while paused; enlarged turns remain teacher controlled', async ({ page }) => {
-  await page.goto('./');
+  await openSetup(page);
   await page.getByLabel('Crew size').selectOption('3');
   await page.getByLabel('Advance completed rounds automatically').check();
   await page.getByLabel('Celebration delay').selectOption('2');

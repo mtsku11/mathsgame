@@ -1,4 +1,9 @@
+import '@fontsource/titan-one/latin-400.css';
+import '@fontsource/baloo-2/latin-600.css';
+import '@fontsource/baloo-2/latin-700.css';
+import '@fontsource/baloo-2/latin-800.css';
 import './style.css';
+import './ui/theme.css';
 import { loadSettings, saveSettings } from './settings';
 import { seededRandom, type Preset, type Side } from './game/questions';
 import { createSession, answer, advance, pass, ready, type Session } from './game/session';
@@ -7,6 +12,9 @@ import { Calibration, ConnectionHistory, describeDevice, readDevices, down, type
 import { cargoPod, marker, markers, missionPart, rocket, dots, planet } from './ui/art';
 import { TransitionTimer } from './game/transition';
 import { registerOffline } from './offline/register';
+import { createRouter, type Screen } from './app/router';
+import { createTitleScreen } from './ui/screens/title';
+import { setLowStim, setReducedMotion } from './ui/fx/motion';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 const announcer = document.createElement('p');
@@ -17,6 +25,9 @@ announcer.setAttribute('aria-live', 'polite');
 announcer.setAttribute('aria-atomic', 'true');
 document.body.append(announcer);
 const settings = loadSettings();
+setReducedMotion(settings.reduced);
+setLowStim(settings.lowStim);
+let legacyActive = false;
 let screen: 'setup' | 'controls' | 'practice' | 'play' | 'results' = 'setup';
 let mode: 'controller' | 'keyboard' = 'controller';
 let session: Session | null = null;
@@ -147,6 +158,7 @@ function results(): string {
   return `<main class="results page"><p class="eyebrow">MISSION COMPLETE</p><h1>A whole crew.<br>A brilliant journey.</h1><div class="result-planets">${[0, 1, 2].map(i => planet(i, true)).join('')}${rocket()}</div><div class="mission-parts result-assembly">${Array.from({ length: 6 }, (_, i) => missionPart(i, true)).join('')}</div><p class="result-stars">✦ ${session!.stars} crew stars collected</p><p>You counted. You explored. You got there together.</p><div class="button-row"><button class="primary" data-action="replay">Another adventure →</button><button data-action="setup">Teacher setup</button></div><details class="summary"><summary>Teacher observation · this session only</summary><p>Two choices include a chance element. This is observation, not an attainment score.</p><table><thead><tr><th>Station</th><th>First try</th><th>Retry</th><th>Supported</th><th>Passed</th></tr></thead><tbody>${presets().map((_, i) => { const turns = session!.history.map(round => round[i]); return `<tr><th>Player ${i + 1}</th><td>${turns.filter(t => t.outcome === 'correct' && t.attempts === 1 && !t.supported).length}</td><td>${turns.filter(t => t.outcome === 'correct' && t.attempts > 1 && !t.supported).length}</td><td>${turns.filter(t => t.outcome === 'correct' && t.supported).length}</td><td>${turns.filter(t => t.outcome === 'passed').length}</td></tr>`; }).join('')}</tbody></table><p>Results disappear when you start again. No pupil data is saved.</p></details></main>`;
 }
 function render(): void {
+  if (!legacyActive) return;
   const focused = document.activeElement as HTMLElement | null;
   const focusId = focused?.id;
   const focusData = focused?.dataset;
@@ -246,7 +258,7 @@ app.addEventListener('change', event => {
   }
   if (target.id === 'effects-volume') { settings.effectsVolume = Number(target.value); saveSettings(settings); }
   if (target.id === 'quiet') { settings.quiet = target.checked; enableAudio(); }
-  if (target.id === 'reduced') settings.reduced = target.checked;
+  if (target.id === 'reduced') { settings.reduced = target.checked; setReducedMotion(target.checked); }
   if (target.id === 'simple') settings.simple = target.checked;
 });
 window.addEventListener('keydown', event => {
@@ -317,10 +329,15 @@ function frame(now: number): void {
   if (changed) { render(); if (announcements.length) announce(announcements.join(' ')); cargoPlayers.forEach(animateCargo); }
   requestAnimationFrame(frame);
 }
-render();
+const router = createRouter<'title' | 'legacy'>(app);
+const legacy: Screen = { mount() { legacyActive = true; render(); }, unmount() { legacyActive = false; } };
+router.register('title', createTitleScreen({ quality: settings.quality, onSetup: () => router.go('legacy') }));
+router.register('legacy', legacy);
+router.go('title');
 registerOffline((status, update) => {
   offlineStatus = status;
   applyUpdate = update;
+  if (!legacyActive) return;
   const label = document.getElementById('offline-status');
   if (label) label.textContent = status;
   const updateBar = app.querySelector('.update-bar');
