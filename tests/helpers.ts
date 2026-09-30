@@ -14,7 +14,7 @@ export async function openSetup(page: Page, url = './'): Promise<void> {
 }
 
 export interface BoostOptions { autoStart?: boolean; seconds?: number; difficulty?: 'easy' | 'normal' | 'hard'; powers?: number[] }
-export interface StartOptions { count?: number; enlarged?: boolean; url?: string; presets?: string[]; pictures?: boolean; autoAdvance?: number; reduced?: boolean; quiet?: boolean; boost?: BoostOptions | false; beforeLaunch?: (page: Page) => Promise<void> }
+export interface StartOptions { count?: number; enlarged?: boolean; url?: string; presets?: string[]; pictures?: boolean; autoAdvance?: number; reduced?: boolean; quiet?: boolean; quality?: 'auto' | 'high' | 'medium' | 'low'; boost?: BoostOptions | false; beforeLaunch?: (page: Page) => Promise<void> }
 
 // The boost settings block of teacher setup. Boost is on by default in the app, so tests that are not about it switch it off.
 export async function setBoost(page: Page, boost: BoostOptions | false): Promise<void> {
@@ -28,15 +28,16 @@ export async function setBoost(page: Page, boost: BoostOptions | false): Promise
 }
 
 // Opens teacher setup, chooses keyboard input and launches the mission on the stage play screen.
-export async function startGame(page: Page, { count = 4, enlarged = false, url = './', presets = [], pictures = false, autoAdvance = 0, reduced = false, quiet = false, boost = false, beforeLaunch }: StartOptions = {}): Promise<void> {
+export async function startGame(page: Page, { count = 4, enlarged = false, url = './', presets = [], pictures = false, autoAdvance = 0, reduced = false, quiet = false, quality, boost = false, beforeLaunch }: StartOptions = {}): Promise<void> {
   await openSetup(page, url);
   await page.getByLabel('Crew size').selectOption(String(count));
   await setBoost(page, boost);
   if (enlarged) await page.getByLabel('Screen layout').selectOption('enlarged');
   for (const [i, preset] of presets.entries()) await page.getByLabel(`Player ${i + 1} maths`).selectOption(preset);
-  if (pictures || reduced || quiet) await page.getByText('Comfort & access settings', { exact: true }).click();
+  if (pictures || reduced || quiet || quality) await page.getByText('Comfort & access settings', { exact: true }).click();
   if (reduced) await page.getByLabel('Reduce motion').check();
   if (quiet) await page.getByLabel('Quiet mode').check();
+  if (quality) await page.getByLabel('Graphics').selectOption(quality);
   if (pictures) for (const checkbox of await page.getByLabel('Picture answers for addition').all()) await checkbox.check();
   if (autoAdvance) {
     await page.getByLabel('Advance completed rounds automatically').check();

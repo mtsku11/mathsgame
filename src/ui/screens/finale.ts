@@ -25,6 +25,8 @@ const seats: Record<number, [number, number][]> = {
   4: [[300, 310], [980, 310], [330, 510], [950, 510]],
 };
 const PILOT = 190;
+// Where the pilots stand while the teacher summary is open, clear of it and of the buttons; top-left corner of each pilot.
+const aside = (index: number, players: number): [number, number] => players <= 2 ? [players === 1 ? 875 : 775 + index * 210, 330] : [775 + (index % 2) * 210, 270 + Math.floor(index / 2) * 150];
 
 export function createFinaleScreen(source: () => FinaleState, options: { quality: () => Quality }): FinaleScreen {
   let stage: Stage | null = null;
@@ -37,7 +39,7 @@ export function createFinaleScreen(source: () => FinaleState, options: { quality
   }
 
   function markup(state: FinaleState): string {
-    const pilots = seats[state.players].map(([x, y], i) => `<div class="sp-fin-pilot" style="left:${x - PILOT / 2}px;top:${y - PILOT * 0.44}px;width:${PILOT}px"><div class="sp-fin-bob">${pilot(i, 'cheer', PILOT)}</div></div>`).join('');
+    const pilots = seats[state.players].map(([x, y], i) => `<div class="sp-fin-pilot" style="left:${x - PILOT / 2}px;top:${y - PILOT * 0.44}px;width:${PILOT}px;--ox:${aside(i, state.players)[0]}px;--oy:${aside(i, state.players)[1]}px"><div class="sp-fin-bob">${pilot(i, 'cheer', PILOT)}</div></div>`).join('');
     return `<div class="sp-space sp-deco" aria-hidden="true"><i class="sp-neb sp-neb1"></i><i class="sp-neb sp-neb2"></i><i class="sp-neb sp-neb3"></i>${skyStars(7)}</div>
 <main class="sp-fin">
 <p class="sp-fin-status"><span class="sp-fin-dot" aria-hidden="true"></span><span id="offline-status"></span></p>

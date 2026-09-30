@@ -2,14 +2,15 @@ import { test, expect } from '@playwright/test';
 import { boostFlow, boostLog, boostPhase, correctSide, mash, pupilKeys, recordBoost, skipToRound, startGame, station } from '../helpers';
 
 // Budget from docs/REDESIGN-PLAN.md section 3: at least 45 fps at 1920x1080 under a 4x CPU throttle.
-test('four simultaneous correct answers with effects on stay at 45 fps or better at 1920x1080 under 4x CPU throttle', async ({ page }) => {
+for (const quality of ['high', 'low'] as const) test(`four simultaneous correct answers with effects on stay at 45 fps or better at 1920x1080 under 4x CPU throttle (${quality})`, async ({ page }) => {
   test.setTimeout(120000);
   await page.setViewportSize({ width: 1920, height: 1080 });
-  await startGame(page, { count: 4 });
+  await startGame(page, { count: 4, quality });
   await expect(page.locator('.fx-canvas')).toHaveCount(1);
+  await expect(page.locator('.fx-canvas')).toHaveAttribute('data-quality', quality);
   await expect.poll(() => page.evaluate(() => (window as unknown as { __nc: { particles: { particleStats(): { ready: boolean } } } }).__nc.particles.particleStats().ready)).toBe(true);
   // The play canvas renders one pixel per screen pixel (1920x1080 here), not the title screen's 2x backing store.
-  expect(await page.locator('.fx-canvas').evaluate(canvas => [(canvas as HTMLCanvasElement).width, (canvas as HTMLCanvasElement).height])).toEqual([1920, 1080]);
+  expect(await page.locator('.fx-canvas').evaluate(canvas => [(canvas as HTMLCanvasElement).width, (canvas as HTMLCanvasElement).height])).toEqual(quality === "high" ? [1920, 1080] : [1280, 720]);
   await page.waitForTimeout(1500);
   const sides = await Promise.all([0, 1, 2, 3].map(index => correctSide(station(page, index))));
 
@@ -42,7 +43,7 @@ test('four simultaneous correct answers with effects on stay at 45 fps or better
   const fps = (window2s.length - 1) / ((window2s.at(-1)! - window2s[0]) / 1000);
   const worst = Math.max(...intervals);
   const summary = `${fps.toFixed(1)} fps average over ${((window2s.at(-1)! - window2s[0]) / 1000).toFixed(2)} s (${window2s.length} frames, worst frame ${worst.toFixed(0)} ms, ${spawned} particles spawned, ${alive} alive at end)`;
-  console.log(`PERF 1920x1080 4x CPU throttle: ${summary}`);
+  console.log(`PERF 1920x1080 4x CPU throttle, play (${quality}): ${summary}`);
   test.info().annotations.push({ type: 'fps', description: summary });
   expect(spawned).toBeGreaterThan(80);
   expect(fps).toBeGreaterThanOrEqual(45);
@@ -54,11 +55,11 @@ const boostPerf = [
   { name: 'Firework Frenzy MAX', round: 1, finaleMs: 6000, tier: 3 },
   { name: 'Bubble Blast POP', round: 3, finaleMs: 4000, tier: 3 },
 ] as const;
-for (const { name, round, finaleMs, tier } of boostPerf) {
-  test(`${name} with four pupils mashing stays at 45 fps or better at 1920x1080 under 4x CPU throttle`, async ({ page }) => {
+for (const quality of ['high', 'low'] as const) for (const { name, round, finaleMs, tier } of boostPerf) {
+  test(`${name} (${quality}) with four pupils mashing stays at 45 fps or better at 1920x1080 under 4x CPU throttle`, async ({ page }) => {
     test.setTimeout(180000);
     await page.setViewportSize({ width: 1920, height: 1080 });
-    await startGame(page, { count: 4, boost: { autoStart: false, seconds: 20, difficulty: 'easy' } });
+    await startGame(page, { count: 4, quality, boost: { autoStart: false, seconds: 20, difficulty: 'easy' } });
     await expect(page.locator('.fx-canvas')).toHaveCount(1);
     await expect.poll(() => page.evaluate(() => (window as unknown as { __nc: { particles: { particleStats(): { ready: boolean } } } }).__nc.particles.particleStats().ready)).toBe(true);
     await skipToRound(page, 4, round);
@@ -96,7 +97,7 @@ for (const { name, round, finaleMs, tier } of boostPerf) {
     const live = window_(at('boostGo') + 300, at('boostFinale'));
     const finale = window_(at('boostFinale'), at('boostFinale') + finaleMs);
     const summary = `live mashing ${live.fps.toFixed(1)} fps (${live.frames} frames, worst ${live.worst.toFixed(0)} ms); ${name} finale ${finale.fps.toFixed(1)} fps (${finale.frames} frames, worst ${finale.worst.toFixed(0)} ms); peak ${alive} particles alive`;
-    console.log(`PERF 1920x1080 4x CPU throttle, ${name}: ${summary}`);
+    console.log(`PERF 1920x1080 4x CPU throttle, ${name} (${quality}): ${summary}`);
     test.info().annotations.push({ type: 'fps', description: summary });
     expect(log.some(entry => entry.name === 'boostFinale' && entry.payload?.tier === tier)).toBe(true);
     expect(finale.frames).toBeGreaterThan(60);

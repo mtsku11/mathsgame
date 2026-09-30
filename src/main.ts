@@ -41,6 +41,7 @@ setReducedMotion(settings.reduced);
 setLowStim(settings.lowStim);
 document.body.classList.toggle('simple', settings.simple);
 const audio = createAudio(settings);
+pixi.applyQuality(settings.quality);
 type View = 'setup' | 'controls' | 'checkin' | 'play' | 'results';
 const routes = { setup: 'setup', controls: 'switches', checkin: 'checkin', play: 'play', results: 'finale' } as const;
 let screen: View = 'setup';
@@ -375,7 +376,7 @@ const boostRun = createBoostRun({
   ended() { resetInput(); if (session && session.round === 6 && !session.finished) perform('next'); else render(); },
 });
 const finale = createFinaleScreen(finaleState, { quality: () => settings.quality });
-const setupScreen = createSetupScreen(setupState, { settings, mode: () => mode, setMode: next => { mode = next; }, refreshAudio: () => audio.refresh() });
+const setupScreen = createSetupScreen(setupState, { settings, mode: () => mode, setMode: next => { mode = next; }, refreshAudio: () => audio.refresh(), applyQuality: () => pixi.applyQuality(settings.quality) });
 const switches = createSwitchScreen(switchState);
 const checkin = createCheckInScreen(checkInState);
 router.register('title', createTitleScreen({ quality: () => settings.quality, onSetup: () => enter('setup') }));
@@ -385,6 +386,7 @@ router.register('checkin', checkin);
 router.register('play', play);
 router.register('finale', finale);
 router.go('title');
+setTimeout(() => { void pixi.runBenchmark(() => settings.quality); }, 600);
 registerOffline((status, update) => {
   offlineStatus = status;
   applyUpdate = update;

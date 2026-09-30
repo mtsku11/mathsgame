@@ -207,3 +207,9 @@ color:var(--sp-lilac)}
 .sp-fin-colour{
 font-weight:600;
 color:var(--sp-lilac)}
+.sp-fin:has(.sp-fin-summary[open]) .sp-fin-pilot{
+left:var(--ox)!important;
+top:var(--oy)!important;
+width:150px!important}
+.sp-fin-summary[open]{
+width:440px}

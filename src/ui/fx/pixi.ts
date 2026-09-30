@@ -10,7 +10,53 @@ export const qualityLevels: Record<QualityLevel, { resolution: number; antialias
   medium: { resolution: 1.5, antialias: true, particles: 1200 },
   low: { resolution: 1, antialias: false, particles: 600 },
 };
-export const resolveQuality = (quality: Quality): QualityLevel => quality === 'auto' ? 'high' : quality;
+// Until the startup benchmark has run, Auto assumes a capable machine.
+let measured: QualityLevel | null = null;
+export const resolveQuality = (quality: Quality): QualityLevel => quality === 'auto' ? measured ?? 'high' : quality;
+export interface BenchSample { workMs: number; frameMs: number }
+export let lastBenchmark: (BenchSample & { level: QualityLevel }) | null = null;
+// workMs: a fixed canvas workload; frameMs: the average animation-frame gap while it was idle. Either being slow drops a level.
+export function pickLevel({ workMs, frameMs }: BenchSample): QualityLevel {
+  if (workMs > 90 || frameMs > 28) return 'low';
+  if (workMs > 40 || frameMs > 20) return 'medium';
+  return 'high';
+}
+const frames = (count: number): Promise<number> => new Promise(resolve => {
+  const times: number[] = [];
+  const tick = (time: number): void => { times.push(time); if (times.length > count) resolve((times.at(-1)! - times[0]) / count); else requestAnimationFrame(tick); };
+  requestAnimationFrame(tick);
+});
+// 400 gradient fills in eight slices, one per animation frame, so the benchmark never holds the main thread long enough to miss a switch press.
+async function workload(): Promise<number> {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1280; canvas.height = 720;
+  const g = canvas.getContext('2d');
+  if (!g) return Infinity;
+  let total = 0;
+  for (let slice = 0; slice < 8; slice++) {
+    await frames(1);
+    const start = performance.now();
+    for (let i = slice * 50; i < slice * 50 + 50; i++) {
+      const x = (i * 97) % 1280, y = (i * 53) % 720, gradient = g.createRadialGradient(x, y, 0, x, y, 160);
+      gradient.addColorStop(0, 'rgba(255,210,63,.6)'); gradient.addColorStop(1, 'rgba(255,210,63,0)');
+      g.globalAlpha = 0.5; g.fillStyle = gradient; g.fillRect(x - 160, y - 160, 320, 320);
+    }
+    g.getImageData(0, 0, 1, 1);
+    total += performance.now() - start;
+  }
+  return total;
+}
+// Flags the page so stylesheets can halve ambient animation on low power.
+export function applyQuality(quality: Quality): void { document.documentElement.classList.toggle('nc-lowpower', resolveQuality(quality) === 'low'); }
+// Runs once at startup (skipped in instant test mode) and settles what Auto means on this computer.
+export async function runBenchmark(quality: () => Quality): Promise<void> {
+  if (isInstant() || measured) return;
+  const frameMs = await frames(24);
+  const workMs = await workload();
+  measured = pickLevel({ workMs, frameMs });
+  lastBenchmark = { workMs, frameMs, level: measured };
+  applyQuality(quality());
+}
 export const particleBudget = (quality: Quality): number => Math.round(qualityLevels[resolveQuality(quality)].particles * (isLowStim() ? 0.25 : 1));
 // Particle screens do not need a backing store denser than the screen shows: one canvas pixel per screen pixel, never above 1.5x (a 1080p window renders 1920x1080, not 2560x1440).
 export const particleResolution = (): number => Math.min(1.5, Math.max(1, stageScale() * (window.devicePixelRatio || 1)));

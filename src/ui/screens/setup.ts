@@ -1,7 +1,7 @@
 import '../pages.css';
 import type { Screen } from '../../app/router';
 import type { Preset, Side } from '../../game/questions';
-import type { BoostPower, BoostSettings, Settings } from '../../settings';
+import type { BoostPower, BoostSettings, Quality, Settings } from '../../settings';
 import { icons, shapeMarker } from '../art/icons';
 import { pilot, pilotColors } from '../art/pilot';
 import { caps, type CapColour } from '../art/caps';
@@ -16,6 +16,7 @@ export interface SetupHooks {
   mode(): InputMode;
   setMode(mode: InputMode): void;
   refreshAudio(): void;
+  applyQuality(): void;
 }
 
 const plural = (count: number): string => `${count} player${count === 1 ? '' : 's'}`;
@@ -68,6 +69,8 @@ ${player.keys.map((key, side) => `<label class="tp-field"><span>${side ? 'Right'
 <p class="tp-hint">Low stimulation turns the music off, softens effects and keeps only the sounds that answer a press.</p>
 <div class="tp-row">${volume('effects', 'Effects', settings.effectsVolume, ' aria-describedby="volume-note"')}${volume('music', 'Music', settings.musicVolume)}${volume('voice', 'Voice', settings.voiceVolume)}</div>
 <div class="tp-checks"><label class="tp-check"><input id="narration" type="checkbox" ${checked(settings.narration)}> Voice narration</label></div><p id="volume-note" class="tp-hint">Quiet mode mutes all sound at every volume.</p>
+<div class="tp-row"><label class="tp-field"><span>Graphics</span><select id="quality"><option value="auto" ${selected(settings.quality === 'auto')}>Auto</option><option value="high" ${selected(settings.quality === 'high')}>High</option><option value="medium" ${selected(settings.quality === 'medium')}>Medium</option><option value="low" ${selected(settings.quality === 'low')}>Low power</option></select></label></div>
+<p class="tp-hint">Auto checks this computer when the game starts. Choose Low power if animation stutters.</p>
 <div id="tp-access">${accessRows()}</div></details>
 </div>
 <p class="tp-notice" role="status"></p>
@@ -105,6 +108,7 @@ ${player.keys.map((key, side) => `<label class="tp-field"><span>${side ? 'Right'
     else if (target.id === 'quiet') { settings.quiet = target.checked; hooks.refreshAudio(); }
     else if (target.id === 'reduced') { settings.reduced = target.checked; setReducedMotion(target.checked); }
     else if (target.id === 'low-stim') { settings.lowStim = target.checked; setLowStim(target.checked); hooks.refreshAudio(); }
+    else if (target.id === 'quality') { settings.quality = target.value as Quality; hooks.applyQuality(); }
     else if (target.id === 'simple') { settings.simple = target.checked; document.body.classList.toggle('simple', target.checked); }
   }
 

@@ -37,7 +37,10 @@ export function timeline(vars?: gsap.TimelineVars): gsap.core.Timeline {
   if (reduced) tl.timeScale(1000);
   return tl;
 }
+// Low power runs every other looping idle, which halves the ambient animation.
+let idles = 0;
 export function idle(target: gsap.TweenTarget, vars: gsap.TweenVars): gsap.core.Tween | null {
+  if (!isCalm() && root.classList.contains('nc-lowpower') && idles++ % 2) return null;
   return isCalm() ? null : gsap.to(target, { repeat: -1, yoyo: true, ease: 'sine.inOut', ...vars });
 }
 export const kill = (target: gsap.TweenTarget): void => { gsap.killTweensOf(target); };

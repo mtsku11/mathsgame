@@ -165,3 +165,9 @@ outline-offset:10px}
 animation:sp-cta-glow 2.4s ease-in-out infinite}
 :is(.nc-reduced,.nc-lowstim,.nc-instant) .sp-cta{
 animation:none}
+.nc-lowpower :is(.sp-tw,.sp-beam,.sp-ring):nth-child(even),.nc-lowpower .sp-neb3{
+animation:none}
+.nc-lowpower .sp-neb3{
+display:none}
+.nc-lowpower :is(.sp-dest-planet,.sp-big-planet) .sp-planet,.nc-lowpower .sp-tship{
+animation-duration:60s}
