@@ -26,6 +26,6 @@ test('published game reloads offline and completes all six rounds', async ({ pag
     await page.getByRole('button', { name: round === 6 ? 'Finish journey' : 'Next round' }).click();
     if (round < 6) await page.waitForTimeout(550);
   }
-  await expect(page.getByText('24 crew stars collected')).toBeVisible();
+  await expect(page.locator('.result-stars')).toContainText('24 crew stars collected');
   expect(errors).toEqual([]);
 });

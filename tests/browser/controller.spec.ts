@@ -23,13 +23,23 @@ for (const count of [3, 4]) {
     const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
     await page.addInitScript(() => {
       let connected = true;
+      let unrelatedConnected = true;
       let pressed: number[] = [];
       let slot = 0;
-      Object.defineProperty(navigator, 'getGamepads', { value: () => connected ? [{
+      Object.defineProperty(navigator, 'getGamepads', { value: () => [connected ? {
         index: slot, id: 'Simulated XAC', connected: true, mapping: 'standard', axes: [0, 1],
         buttons: Array.from({ length: 8 }, (_, i) => ({ pressed: pressed.includes(i), value: pressed.includes(i) ? 1 : 0 }))
-      }] : [] });
+      } : null, unrelatedConnected ? {
+        index: 9, id: 'Unassigned controller', connected: true, mapping: 'standard', axes: [0, 0],
+        buttons: Array.from({ length: 4 }, () => ({ pressed: false, value: 0 }))
+      } : null] });
       window.addEventListener('mock-buttons', event => { pressed = (event as CustomEvent<number[]>).detail; });
+      window.addEventListener('mock-unrelated-disconnect', () => {
+        unrelatedConnected = false;
+        const event = new Event('gamepaddisconnected');
+        Object.defineProperty(event, 'gamepad', { value: { index: 9 } });
+        window.dispatchEvent(event);
+      });
       window.addEventListener('mock-connection', event => {
         connected = (event as CustomEvent<boolean>).detail;
         if (connected) slot = 2;
@@ -49,6 +59,10 @@ for (const count of [3, 4]) {
     await press(page, [side]); await press(page, []);
     await expect(first).toContainText('Cargo ready');
     const before = await page.locator('.station').allTextContents();
+    await page.evaluate(() => window.dispatchEvent(new Event('mock-unrelated-disconnect')));
+    await page.waitForTimeout(250);
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    expect(await page.locator('.station').allTextContents()).toEqual(before);
     await page.evaluate(() => window.dispatchEvent(new CustomEvent('mock-connection', { detail: false })));
     await expect(page.getByRole('dialog')).toContainText('disconnected');
     await page.evaluate(() => window.dispatchEvent(new CustomEvent('mock-connection', { detail: true })));

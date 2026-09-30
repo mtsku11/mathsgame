@@ -9,6 +9,13 @@ import { TransitionTimer } from './game/transition';
 import { registerOffline } from './offline/register';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
+const announcer = document.createElement('p');
+announcer.id = 'game-status';
+announcer.className = 'sr-only';
+announcer.setAttribute('role', 'status');
+announcer.setAttribute('aria-live', 'polite');
+announcer.setAttribute('aria-atomic', 'true');
+document.body.append(announcer);
 const settings = loadSettings();
 let screen: 'setup' | 'controls' | 'practice' | 'play' | 'results' = 'setup';
 let mode: 'controller' | 'keyboard' = 'controller';
@@ -43,6 +50,15 @@ const escape = (value: string): string => value.replace(/[&<>"']/g, char => ({ '
 const checked = (value: boolean): string => value ? 'checked' : '';
 const selected = (value: boolean): string => value ? 'selected' : '';
 function resetInput(): void { filter.reset(); pulses = emptyPairs(); }
+function announce(message: string): void { announcer.textContent = message; }
+function missionAnnouncement(): string {
+  if (!session) return '';
+  if (!settings.enlarged) return `Round ${session.round} of 6. New questions for all ${settings.count} players.`;
+  const player = session.active;
+  const question = session.turns[player].question;
+  const prompt = question.kind === 'count' ? 'How many objects?' : `${question.groups.join(' plus ')} equals what?`;
+  return `Player ${player + 1}. ${prompt} Left answer ${question.choices[0]}. Right answer ${question.choices[1]}.`;
+}
 function sound(): void {
   if (settings.quiet || settings.effectsVolume === 0 || !audio || audio.state !== 'running') return;
   const oscillator = audio.createOscillator();
@@ -113,7 +129,7 @@ function station(i: number, practice: boolean): string {
   return `<section class="station station-${i} ${done ? 'resolved' : ''}" aria-labelledby="station-${i}-title"><div class="station-heading"><h2 id="station-${i}-title">${marker(i)} Player ${i + 1}<span>${markers[i]}</span></h2><span class="station-state">${done ? 'READY' : practice ? 'PRACTICE' : 'YOUR TURN'}</span></div>
   <div class="question-area">${practice ? `<p class="prompt">Make a connection</p><p class="practice-symbol" aria-hidden="true">${marker(i)}</p>` : `<p class="prompt">${q!.kind === 'count' ? 'How many?' : `${q!.groups.join(' + ')} = ?`}</p><div class="groups">${q!.groups.map(value => dots(value)).join('<span class="plus" aria-hidden="true">+</span>')}</div>`}</div>
   <div class="answers">${[0, 1].map(side => `<button class="answer ${practice && tested[i][side] ? 'tested' : ''}" data-answer-player="${i}" data-answer-side="${side}" ${done || paused ? 'disabled' : ''} aria-label="Player ${i + 1}, ${side ? 'right' : 'left'} answer${q ? `, ${q.choices[side]}` : ''}"><span class="answer-value">${practice ? side ? 'Right' : 'Left' : settings.players[i].quantities && q!.kind === 'add' ? dots(q!.choices[side]) : q!.choices[side]}</span><span class="answer-label">${side ? 'RIGHT' : 'LEFT'} <span>${mode === 'keyboard' ? settings.players[i].keys[side].slice(3) : 'SWITCH'}${practice && tested[i][side] ? ' · CHECKED' : ''}</span></span></button>`).join('')}</div>
-  <div class="station-footer"><p role="status">${feedback}</p>${!practice ? `<div class="teacher-small"><button aria-label="Help player ${i + 1}" data-help="${i}" ${done || paused ? 'disabled' : ''}>Help</button><button aria-label="Pass player ${i + 1}" data-pass="${i}" ${done || paused ? 'disabled' : ''}>Pass</button></div>` : ''}</div>${turn?.supported && !done ? `<div class="scaffold">Count together: ${Array.from({ length: q!.groups.reduce((a, b) => a + b, 0) }, (_, n) => `<span>${n + 1}</span>`).join('')}</div>` : '<div class="scaffold-space" aria-hidden="true"></div>'}</section>`;
+  <div class="station-footer"><p>${feedback}</p>${!practice ? `<div class="teacher-small"><button aria-label="Help player ${i + 1}" data-help="${i}" ${done || paused ? 'disabled' : ''}>Help</button><button aria-label="Pass player ${i + 1}" data-pass="${i}" ${done || paused ? 'disabled' : ''}>Pass</button></div>` : ''}</div>${turn?.supported && !done ? `<div class="scaffold">Count together: ${Array.from({ length: q!.groups.reduce((a, b) => a + b, 0) }, (_, n) => `<span>${n + 1}</span>`).join('')}</div>` : '<div class="scaffold-space" aria-hidden="true"></div>'}</section>`;
 }
 function playScreen(): string {
   const practice = screen === 'practice';
@@ -175,17 +191,19 @@ function perform(action: string): void {
     case 'start':
       if (mode === 'controller' && !tested.slice(0, settings.count).every(pair => pair.every(Boolean))) return;
       if (!recovering) { random = seededRandom(Date.now()); session = createSession(presets(), random); }
-      screen = 'play'; paused = false; recovering = false; pauseReason = ''; flashes = ['', '', '', '']; resetInput(); render(); return;
+      screen = 'play'; paused = false; recovering = false; pauseReason = ''; flashes = ['', '', '', '']; resetInput(); render(); announce(missionAnnouncement()); return;
     case 'pause': pause(); return;
     case 'resume':
       paused = false; pauseReason = ''; resetInput(); render();
       app.querySelector<HTMLElement>('[data-action="pause"]')?.focus();
+      announce(missionAnnouncement());
       return;
     case 'pause-back': screen = 'play'; paused = true; render(); return;
     case 'reconnect': bindings = emptyBindings(); calibration = null; screen = 'controls'; render(); return;
     case 'next':
       if (session && !paused && advance(session, presets(), random, settings.enlarged)) {
         transition.reset(); flashes = ['', '', '', '']; resetInput(); if (session.finished) { screen = 'results'; sound(); } render();
+        announce(session.finished ? `Mission complete. ${session.stars} crew stars collected.` : missionAnnouncement());
       } return;
     case 'replay': newJourneySetup(); return;
     case 'finish': if (window.confirm('End this journey? Current crew stars will be cleared.')) perform('setup'); return;
@@ -203,9 +221,9 @@ app.addEventListener('click', event => {
   }
   if (button.dataset.answerPlayer !== undefined) { pulses[Number(button.dataset.answerPlayer)][Number(button.dataset.answerSide)] = true; return; }
   if (session && !paused && button.dataset.help !== undefined) {
-    session.turns[Number(button.dataset.help)].supported = true; render();
+    const player = Number(button.dataset.help); session.turns[player].supported = true; render(); announce(`Player ${player + 1}. Count together for help.`);
   }
-  if (session && !paused && button.dataset.pass !== undefined) { pass(session, Number(button.dataset.pass)); render(); }
+  if (session && !paused && button.dataset.pass !== undefined) { const player = Number(button.dataset.pass); pass(session, player); render(); announce(`Player ${player + 1}. Travelling with the crew.`); }
 });
 app.addEventListener('change', event => {
   const target = event.target as HTMLInputElement;
@@ -273,10 +291,12 @@ function frame(now: number): void {
   pulses = emptyPairs();
   let changed = false;
   const cargoPlayers: number[] = [];
+  const announcements: string[] = [];
   if (screen === 'practice' && !document.hidden && document.hasFocus()) {
     for (const { pupil, side } of actions) {
       if (pupil >= settings.count) continue;
       flashes[pupil] = `${side ? 'Right' : 'Left'} switch connected.`;
+      announcements.push(`Player ${pupil + 1}. ${flashes[pupil]}`);
       if (mode === 'keyboard' || raw[pupil][side]) pendingTests[pupil][side] = true;
       changed = true;
     }
@@ -286,14 +306,14 @@ function frame(now: number): void {
   } else if (screen === 'play' && !paused && session) {
     for (const { pupil, side } of actions) {
       if (pupil >= settings.count || (settings.enlarged && pupil !== session.active) || session.turns[pupil].outcome !== 'waiting') continue;
-      if (answer(session, pupil, side)) { sound(); cargoPlayers.push(pupil); }
-      else flashes[pupil] = 'Let’s count together. You can try again.';
+      if (answer(session, pupil, side)) { sound(); cargoPlayers.push(pupil); announcements.push(`Player ${pupil + 1}. Cargo ready. Thank you!`); }
+      else { flashes[pupil] = 'Let’s count together. You can try again.'; announcements.push(`Player ${pupil + 1}. ${flashes[pupil]}`); }
       changed = true;
     }
   }
   const completed = !!session && !session.finished && ready(session);
   if (transition.sample(now, settings.autoAdvance && completed, screen === 'play' && !paused && !document.hidden, settings.transitionSeconds * 1000)) perform('next');
-  if (changed) { render(); cargoPlayers.forEach(animateCargo); }
+  if (changed) { render(); if (announcements.length) announce(announcements.join(' ')); cargoPlayers.forEach(animateCargo); }
   requestAnimationFrame(frame);
 }
 render();

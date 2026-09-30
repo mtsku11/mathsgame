@@ -13,11 +13,11 @@ test('four players complete six rounds with teacher support; no console errors',
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   await start(page);
   for (let round = 1; round <= 6; round++) {
-    await expect(page.getByText(`Round ${round} of 6`, { exact: false })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Journey progress' }).getByText(`Round ${round} of 6`, { exact: false })).toBeVisible();
     for (let pupil = 1; pupil <= 4; pupil++) await page.getByRole('button', { name: `Pass player ${pupil}`, exact: true }).click();
     await page.getByRole('button', { name: round === 6 ? 'Finish journey' : 'Next round' }).click();
   }
-  await expect(page.getByText('0 crew stars collected')).toBeVisible();
+  await expect(page.locator('.result-stars')).toContainText('0 crew stars collected');
   await expect(page.getByText('A whole crew.')).toBeVisible(); expect(errors).toEqual([]);
 });
 test('cargo reaches the rocket and completed rounds build the expedition', async ({ page }) => {
@@ -59,6 +59,19 @@ test('help does not answer, pause preserves question, blur pauses', async ({ pag
   expect(await page.locator('.station').first().innerText()).toContain(prompt);
   await page.evaluate(() => window.dispatchEvent(new Event('blur')));
   await expect(page.getByRole('dialog')).toContainText('lost focus');
+  await page.getByRole('button', { name: 'Resume journey', exact: true }).click();
+  const question = await page.locator('.station .question-area').first().innerText();
+  const stars = await page.locator('.star-total strong').innerText();
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await expect(page.getByRole('dialog')).toContainText('page was hidden');
+  await page.evaluate(() => Object.defineProperty(document, 'hidden', { configurable: true, get: () => false }));
+  await page.getByRole('button', { name: 'Resume journey', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Pause journey', exact: true })).toBeFocused();
+  await expect(page.locator('.station .question-area').first()).toHaveText(question);
+  await expect(page.locator('.star-total strong')).toHaveText(stars);
 });
 test('enlarged turns require teacher advance, small viewport has no horizontal overflow', async ({ page }) => {
   await start(page, true);
@@ -71,9 +84,14 @@ test('enlarged turns require teacher advance, small viewport has no horizontal o
 });
 test('fresh simultaneous keys affect each pupil without held repeats across a round', async ({ page }) => {
   await start(page);
-  await page.keyboard.down('f'); await page.keyboard.down('a'); await page.keyboard.down('c'); await page.keyboard.down('q');
+  await page.evaluate(() => {
+    for (const [key, code] of [['f', 'KeyF'], ['a', 'KeyA'], ['c', 'KeyC'], ['q', 'KeyQ']]) {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key, code }));
+    }
+  });
   await page.waitForTimeout(100);
   for (let i = 0; i < 4; i++) await expect(page.locator('.station-footer > p').nth(i)).not.toHaveText('Choose your answer');
+  for (let pupil = 1; pupil <= 4; pupil++) await expect(page.locator('#game-status')).toContainText(`Player ${pupil}.`);
   for (let pupil = 1; pupil <= 4; pupil++) { const pass = page.getByRole('button', { name: `Pass player ${pupil}`, exact: true }); if (await pass.isEnabled()) await pass.click(); }
   await page.getByRole('button', { name: 'Next round' }).click();
   await page.waitForTimeout(600);
@@ -115,12 +133,12 @@ for (const count of [3, 4]) {
       // The per-pupil 500 ms cooldown survives round transitions.
       await page.waitForTimeout(600);
     }
-    await expect(page.getByText(`${6 * count} crew stars collected`)).toBeVisible();
+    await expect(page.locator('.result-stars')).toContainText(`${6 * count} crew stars collected`);
     await page.getByRole('button', { name: 'Another adventure' }).click();
     await expect(page.getByRole('button', { name: 'Launch the journey' })).toBeVisible();
     await page.getByRole('button', { name: 'Launch the journey' }).click();
     await expect(page.locator('.star-total strong')).toHaveText('0');
-    await expect(page.getByText('Round 1 of 6', { exact: false })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Journey progress' }).getByText('Round 1 of 6', { exact: false })).toBeVisible();
   });
 }
 
@@ -143,7 +161,7 @@ test('automatic completed rounds freeze while paused; enlarged turns remain teac
   await page.getByRole('button', { name: 'Pause journey', exact: true }).click();
   await page.waitForTimeout(2200);
   await page.getByRole('button', { name: 'Resume journey', exact: true }).click();
-  await expect(page.getByText('Round 1 of 6', { exact: false })).toBeVisible();
-  await expect(page.getByText('Round 2 of 6', { exact: false })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Journey progress' }).getByText('Round 1 of 6', { exact: false })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Journey progress' }).getByText('Round 2 of 6', { exact: false })).toBeVisible();
   await expect(page.locator('.station h2')).toContainText('Player 1');
 });

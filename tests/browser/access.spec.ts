@@ -73,6 +73,32 @@ test('reduced motion keeps cargo and destination progress visible without travel
   expect(await page.locator('.planet.revealed .planet-reveal').evaluate(element => getComputedStyle(element).transitionDuration)).toBe('0s');
 });
 
+test('one stable live region announces the active enlarged turn and feedback', async ({ page }) => {
+  await page.goto('./');
+  await page.getByLabel('Crew size').selectOption('4');
+  await page.getByLabel('Screen layout').selectOption('enlarged');
+  await page.getByLabel('Keyboard & on-screen buttons').check();
+  await page.getByRole('button', { name: 'Enter practice' }).click();
+  await page.getByRole('button', { name: 'Launch the journey' }).click();
+
+  const status = page.locator('#game-status');
+  await expect(status).toHaveAttribute('role', 'status');
+  await expect(status).toHaveAttribute('aria-live', 'polite');
+  await expect(status).toHaveAttribute('aria-atomic', 'true');
+  await expect(status).toContainText('Player 1.');
+  await expect(status).toContainText('Left answer');
+  await expect(page.locator('#game-status[aria-live="polite"]')).toHaveCount(1);
+  await expect(page.locator('.station-footer > p')).not.toHaveAttribute('role', 'status');
+
+  await page.getByRole('button', { name: 'Help player 1', exact: true }).click();
+  await expect(status).toHaveText('Player 1. Count together for help.');
+  await page.getByRole('button', { name: 'Pass player 1', exact: true }).click();
+  await expect(status).toHaveText('Player 1. Travelling with the crew.');
+  await page.getByRole('button', { name: 'Next player' }).click();
+  await expect(status).toContainText('Player 2.');
+  await expect(status).toContainText('Left answer');
+});
+
 test('quiet play stays silent and teacher can enable and disable local sound', async ({ page }) => {
   await page.addInitScript(() => {
     const original = AudioContext.prototype.createOscillator;

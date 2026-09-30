@@ -51,7 +51,7 @@ test('production reloads offline, completes a mission, and defers updates until 
     await page.getByRole('button', { name: round === 6 ? 'Finish journey' : 'Next round' }).click();
     if (round < 6) await page.waitForTimeout(550);
   }
-  await expect(page.getByText('24 crew stars collected')).toBeVisible();
+  await expect(page.locator('.result-stars')).toContainText('24 crew stars collected');
   await context.setOffline(false);
   await page.getByRole('button', { name: 'Another adventure' }).click();
   await page.getByRole('button', { name: 'Launch the journey' }).click();

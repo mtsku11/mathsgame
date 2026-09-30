@@ -47,9 +47,10 @@ Use PLAN.md's provisional defaults for independent software work while the remai
 
 - [x] Add three/four-pupil fixed layouts and enlarged turn-taking mode.
 - [x] Add explicit reconnect revalidation and blur/visibility pause recovery.
-- [ ] Add reduced motion, quiet settings, local sound effects, and restrained accessible status.
+- [x] Add reduced motion, quiet settings, local sound effects, and restrained accessible status.
 - [x] Persist anonymous setup preferences; bindings remain session-only and new sessions require calibration.
-- [ ] Complete remaining access acceptance: actual browser 200% zoom, screen-reader announcements, visibility-change recovery, and unrelated-controller disconnect.
+- [x] Verify visibility-change recovery and unrelated-controller disconnect simulations; add one stable live region for active enlarged turns and feedback.
+- [ ] Complete manual access acceptance: actual browser 200% zoom and NVDA/VoiceOver announcement checks.
 - [x] Add separate effects-volume control in setup and pause; verify persistence, quiet/zero muting, gain scaling, and keyboard access.
 - [x] Complete cargo flights, six-part round progress, and distinct destination reveals with static reduced-motion equivalents.
 - [x] Fit practice and mission at 1280×720 with 96px answer targets, picture answers, Help feedback, and teacher controls visible together.
@@ -60,11 +61,11 @@ Use PLAN.md's provisional defaults for independent software work while the remai
 
 - [x] Bundle all assets locally and implement production precaching with accurate offline readiness.
 - [x] Verify production offline reload and a complete mission; verify updates wait between sessions (Chromium on development Mac; classroom PC still untested).
-- [ ] Write docs/TEACHER-GUIDE.md and complete the tested/untested configuration record.
+- [x] Write docs/TEACHER-GUIDE.md and complete the tested/untested configuration record.
 - [ ] Complete the physical classroom checklist and a lesson-length rehearsal with teacher feedback.
 - [x] Run typecheck, unit tests, browser tests, and production build (28 September 2026; rerun for delivery after further changes).
 - [ ] Obtain a read-only review of the final diff and resolve material findings.
-- [ ] Deliver source, lockfile, dist artifact, teacher guide, and clear remaining limitations.
+- [x] Deliver source, lockfile, hosted production artifact, teacher guide, and clear remaining limitations.
 - [x] Authorise GitHub Pages at `https://mtsku11.github.io/mathsgame/` in public `mtsku11/mathsgame` (29 September 2026).
 - [x] Publish and verify the hosted browser suite and offline mission (20/20 at `https://mtsku11.github.io/mathsgame/`, 29 September 2026).
 
