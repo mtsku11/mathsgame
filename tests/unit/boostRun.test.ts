@@ -125,6 +125,28 @@ describe('boost events and the view', () => {
     expect(f.view.update.mock.calls.length).toBeGreaterThan(200);
   });
 
+  it('announces the countdown 3, 2, 1 once each, and home once after the last Warp Drive', () => {
+    const f = fixture(6, 1, settings => { settings.boost.seconds = 20; });
+    const heard: string[] = [];
+    unsubscribe.push(events.on('boostCount', ({ n }) => heard.push(`count${n}`)), events.on('homeReached', () => heard.push('home')), events.on('destinationReached', () => heard.push('destination')));
+    f.run.start(release(1), 0);
+    play(f, INTRO_MS + 100);
+    expect(heard).toEqual(['count3', 'count2', 'count1']);
+    play(f, INTRO_MS + 6000, tapping(0, 1));
+    play(f, INTRO_MS + 20000);
+    expect(heard).toEqual(['count3', 'count2', 'count1', 'home']);
+    expect(f.arrived).toEqual([]);
+
+    const mid = fixture(2, 1, settings => { settings.boost.seconds = 20; });
+    const arrivals: string[] = [];
+    unsubscribe.push(events.on('homeReached', () => arrivals.push('home')));
+    mid.run.start(release(1), 0);
+    play(mid, INTRO_MS + 6000, tapping(0, 1));
+    play(mid, INTRO_MS + 20000);
+    expect(arrivals).toEqual([]);
+    expect(mid.arrived).toEqual([1]);
+  });
+
   it('a switch held when the boost starts does not count until released and pressed again', () => {
     const f = fixture(1, 1, settings => { settings.boost.seconds = 20; });
     f.run.start([left], 0);

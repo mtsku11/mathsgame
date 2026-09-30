@@ -1,5 +1,6 @@
 import raw from '../../public/audio/manifest.json';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { Timed } from '../../src/audio/backend';
 import { hasVoice, music, sfx, useManifest, voice, type SfxId } from '../../src/audio/manifest';
 import {
   BOOST_MUSIC_STEPS, DUCK_LEVEL, LOW_STIM_SFX, MAX_WAITING, OverlapLimiter, PRAISE, VoiceQueue, boostStep, correctRate, duckLevel, helpLines, musicAllowed, musicGain, nextPraise, pewRate,
@@ -256,5 +257,39 @@ describe('lines', () => {
     expect(Object.keys(music).sort()).toEqual(['boost', 'jingle_mission', 'jingle_round', 'mission', 'title']);
     for (const entry of Object.values(music).filter(item => item.loop)) expect(entry.loopTo! > entry.loopFrom!).toBe(true);
     expect(Object.keys(voice.sprite).length).toBe(Object.keys(voice.text).length);
+  });
+});
+
+describe('pausable countdown', () => {
+  it('does not finish while paused and finishes after the remaining time once resumed', () => {
+    vi.useFakeTimers();
+    try {
+      let done = 0;
+      const timed = new Timed(1000, () => { done++; });
+      timed.start();
+      vi.advanceTimersByTime(400);
+      timed.pause();
+      vi.advanceTimersByTime(5000);
+      expect(done).toBe(0);
+      timed.resume();
+      vi.advanceTimersByTime(599);
+      expect(done).toBe(0);
+      vi.advanceTimersByTime(1);
+      expect(done).toBe(1);
+      timed.resume();
+      vi.advanceTimersByTime(5000);
+      expect(done).toBe(1);
+    } finally { vi.useRealTimers(); }
+  });
+  it('a cancelled countdown never finishes', () => {
+    vi.useFakeTimers();
+    try {
+      let done = 0;
+      const timed = new Timed(100, () => { done++; });
+      timed.start();
+      timed.cancel();
+      vi.advanceTimersByTime(1000);
+      expect(done).toBe(0);
+    } finally { vi.useRealTimers(); }
   });
 });
