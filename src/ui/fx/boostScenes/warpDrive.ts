@@ -75,7 +75,7 @@ function loadAssets(app: Application): Promise<Assets> {
 }
 
 interface Sim { drift: number; radial: number; speed: number; streak: number; density: number; tunnel: number }
-interface Field { warp: Container; flare: Sprite; ring: Sprite; zoom: ZoomBlurFilter | null; step(dt: number, time: number): void; destroy(): void }
+interface Field { warp: Container; layer: Container; flare: Sprite; ring: Sprite; zoom: ZoomBlurFilter | null; step(dt: number, time: number): void; destroy(): void }
 
 // The Pixi half of Warp Drive: a star field that drifts, then streaks out from the ship, then rushes into a tunnel, plus the launch flare and shockwave ring.
 // Streaks are pooled particles in one draw call; the field only ever reads the `sim` numbers that GSAP tweens.
@@ -108,10 +108,14 @@ async function buildField(app: Application, context: SceneContext, sim: Sim, isA
     container.addParticle(particle);
   }
   const flare = new pixi.Sprite(a.flare);
-  flare.anchor.set(0.5); flare.position.set(CENTRE.x, CENTRE.y); flare.alpha = 0; flare.blendMode = 'add';
+  // Both sprites are large and additive, so they are only drawn while they are showing: a full-screen quad at zero alpha still costs its whole fill rate.
+  flare.anchor.set(0.5); flare.position.set(CENTRE.x, CENTRE.y); flare.alpha = 0; flare.blendMode = 'add'; flare.visible = false;
   const ring = new pixi.Sprite(a.ring);
-  ring.anchor.set(0.5); ring.position.set(CENTRE.x, CENTRE.y); ring.alpha = 0; ring.scale.set(0.1); ring.blendMode = 'add';
-  warp.addChild(container, ring, flare);
+  ring.anchor.set(0.5); ring.position.set(CENTRE.x, CENTRE.y); ring.alpha = 0; ring.scale.set(0.1); ring.blendMode = 'add'; ring.visible = false;
+  // Only the star layer goes through the zoom blur. The flare and ring stay outside it, or their additive blending would change the moment the filter attaches.
+  const layer = new pixi.Container();
+  layer.addChild(container);
+  warp.addChild(layer, ring, flare);
   // The zoom blur is the costliest pass, so it exists only at the highest quality level; it loads with the pixi-filters chunk.
   let zoom: ZoomBlurFilter | null = null;
   if (level === 'high') {
@@ -123,10 +127,18 @@ async function buildField(app: Application, context: SceneContext, sim: Sim, isA
   }
   if (!isAlive()) { warp.destroy({ children: true }); return null; }
   app.stage.addChildAt(warp, 0);
+  // One throwaway render with everything showing compiles the ring, flare and zoom-blur shaders now, during the intro, instead of hitching the first frame of the finale.
+  flare.visible = ring.visible = true;
+  flare.alpha = ring.alpha = 0.01;
+  if (zoom) layer.filters = [zoom];
+  app.render();
+  flare.visible = ring.visible = false;
+  flare.alpha = ring.alpha = 0;
+  layer.filters = [];
   let cycle = 0;
   let tinted = false;
   const field: Field = {
-    warp, flare, ring, zoom,
+    warp, layer, flare, ring, zoom,
     step(dt, time) {
       cycle = Math.floor(time * 3);
       // Streaks are cool white until the tunnel opens, then take the pilots' colours and cycle through them.
@@ -164,7 +176,7 @@ async function buildField(app: Application, context: SceneContext, sim: Sim, isA
       }
     },
     destroy() {
-      warp.filters = [];
+      layer.filters = [];
       warp.removeFromParent();
       // The atlas textures are shared and outlive the scene; only this scene's display objects go.
       warp.destroy({ children: true });
@@ -288,12 +300,16 @@ export function createWarpDriveScene(): BoostScene {
         trailPoints = current.saucers.map(saucer => { const at = stagePoint(saucer); return { x: at.x, y: 640 }; });
         if (tier === 3) {
           current.shake(6, 0.32);
-          tl.to(f.flare, { alpha: 0.55, duration: 0.09, ease: 'power2.out' }, 0)
+          // One bloom inside 250 ms. It ramps over several frames on the way up and down so no single frame jumps in brightness.
+          f.flare.visible = true;
+          tl.to(f.flare, { alpha: 0.42, duration: 0.12, ease: 'sine.out' }, 0)
             .to(f.flare.scale, { x: 4.4, y: 4.4, duration: 0.25, ease: 'power2.out' }, 0)
-            .to(f.flare, { alpha: 0, duration: 0.16, ease: 'power1.in' }, 0.09);
+            .to(f.flare, { alpha: 0, duration: 0.13, ease: 'sine.in', onComplete: () => { f.flare.visible = false; } }, 0.12);
         }
         if (plan.ring) {
-          tl.fromTo(f.ring, { alpha: plan.ring }, { alpha: 0, duration: 0.6, ease: 'power1.in' }, 0)
+          f.ring.visible = true;
+          tl.fromTo(f.ring, { alpha: 0 }, { alpha: plan.ring * 0.85, duration: 0.1, ease: 'none', immediateRender: false }, 0)
+            .to(f.ring, { alpha: 0, duration: 0.5, ease: 'power1.in', onComplete: () => { f.ring.visible = false; } }, 0.1)
             .fromTo(f.ring.scale, { x: 0.1, y: 0.1 }, { x: 5.9, y: 5.9, duration: 0.6, ease: 'power2.out' }, 0);
         }
         tl.to(tunnel, { opacity: tier === 3 ? 1 : tier === 2 ? 0.75 : 0.5, duration: 0.75, ease: 'sine.inOut' }, 0.15)
@@ -308,12 +324,14 @@ export function createWarpDriveScene(): BoostScene {
           .to(tunnel, { opacity: 0, duration: 1, ease: 'sine.inOut' }, arrive)
           .to(ship, { opacity: 0, duration: 0.4 }, arrive);
         if (f.zoom) {
+          // Attached at the very start, at zero strength, so the pass never appears mid-scene; removed once the rush has slowed.
           const filter = f.zoom;
-          f.warp.filters = [filter];
-          tl.fromTo(filter, { strength: 0 }, { strength: 0.085, duration: 1.1, ease: 'sine.inOut' }, 0.6)
+          filter.strength = 0;
+          f.layer.filters = [filter];
+          tl.to(filter, { strength: 0.085, duration: 1.1, ease: 'sine.inOut' }, 0.6)
             .to(filter, { strength: 0.03, duration: Math.max(0.4, arrive - 1.7), ease: 'none' }, 1.7)
             .to(filter, { strength: 0, duration: 0.8, ease: 'sine.inOut' }, arrive)
-            .call(() => { f.warp.filters = []; }, [], arrive + 0.8);
+            .call(() => { f.layer.filters = []; }, [], arrive + 0.8);
         }
         current.saucers.forEach((saucer, i) => {
           tl.to(saucer, { rotation: i % 2 ? 7 : -7, duration: 0.5, ease: 'sine.inOut' }, 0.35)

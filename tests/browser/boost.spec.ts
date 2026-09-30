@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import {
-  boostFlow, boostLog, boostPhase, boostState, countOf, mash, nextButton, passAll, pupilKeys, recordBoost, setButtons, startBoostRound, startController, startGame, tapKey, type Logged,
+  boostFlow, boostLog, boostPhase, boostState, countOf, mapAndCheck, mash, nextButton, passAll, pupilKeys, recordBoost, setButtons, setConnected, startBoostRound, startController, startGame, tapKey, type Logged,
 } from '../helpers';
 
 const errorsOf = (page: Page): string[] => {
@@ -326,4 +326,103 @@ test('a boost never ranks or counts pupils: no digits or names appear on the boo
   const text = (await page.locator('.sp-btop').innerText()).replace(/\s+/g, ' ');
   expect(text).not.toMatch(/\d/);
   expect(text).not.toMatch(/fastest|winner|score|rank|first|second/i);
+});
+
+test('tier cards, tier stars, the meter and the saucer heat follow the game state; the ring shows time left', async ({ page }) => {
+  test.setTimeout(60000);
+  const errors = errorsOf(page);
+  await startGame(page, { count: 3, boost: { autoStart: false, seconds: 20, difficulty: 'easy', powers: [3, 1, 1] } });
+  await startBoostRound(page, 3);
+  const meterX = (): Promise<number> => page.locator('.sp-meter-fill').evaluate(element => new DOMMatrix(getComputedStyle(element).transform).m41);
+  const heat = (index: number): Promise<number> => page.locator('.sp-bheat').nth(index).evaluate(element => Number(getComputedStyle(element).opacity));
+  const tap = async (times: number): Promise<void> => { for (let i = 0; i < times; i++) { await tapKey(page, 0, i % 2, 60); await page.waitForTimeout(90); } };
+  expect(Math.round(await meterX())).toBe(-750);
+  expect(await heat(0)).toBeCloseTo(0.28, 1);
+  await tap(4);
+  expect(await boostState(page)).toMatchObject({ tier: 1, energy: 12, target: 36 });
+  await expect(page.locator('.sp-bword')).toHaveText('BOOST!');
+  await expect(page.locator('.sp-tierstar.is-lit')).toHaveCount(1);
+  expect(await heat(0)).toBeGreaterThan(0.6);
+  expect(await heat(1)).toBeCloseTo(0.28, 1);
+  await tap(4);
+  await expect(page.locator('.sp-bword')).toHaveText('SUPER!');
+  await expect(page.locator('.sp-tierstar.is-lit')).toHaveCount(2);
+  await page.waitForTimeout(400);
+  expect(Math.round(await meterX())).toBeGreaterThanOrEqual(-253);
+  expect(Math.round(await meterX())).toBeLessThanOrEqual(-247);
+  const ring = await page.locator('.sp-timer-arc').getAttribute('stroke-dasharray');
+  const [drawn, whole] = ring!.split(' ').map(Number);
+  expect(drawn / whole).toBeGreaterThan(0.6);
+  expect(drawn / whole).toBeLessThan(1);
+  await tap(4);
+  await expect(page.locator('.sp-bword')).toHaveText('MEGA!');
+  await expect(page.locator('.sp-tierstar.is-lit')).toHaveCount(3);
+  expect(await boostPhase(page)).toBe('finale');
+  expect(errors).toEqual([]);
+});
+
+test('a pupil who has not pressed for 4 seconds gets a sparkle and a wiggle, and nothing else', async ({ page }) => {
+  test.setTimeout(60000);
+  await startGame(page, { count: 2, boost: { autoStart: false, seconds: 20, difficulty: 'hard' } });
+  await expect(page.locator('.fx-canvas')).toHaveCount(1);
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __nc: { particles: { particleStats(): { ready: boolean } } } }).__nc.particles.particleStats().ready)).toBe(true);
+  await startBoostRound(page, 2);
+  const spawned = (): Promise<number> => page.evaluate(() => (window as unknown as { __nc: { particles: { particleStats(): { spawned: number } } } }).__nc.particles.particleStats().spawned);
+  const live = await spawned();
+  await page.waitForTimeout(3000);
+  const before = await spawned();
+  expect(before - live).toBe(0);
+  await page.waitForTimeout(1500);
+  expect(await spawned() - before).toBeGreaterThanOrEqual(12);
+  expect(await page.locator('.sp-btop').innerText()).not.toMatch(/press|faster|hurry|idle/i);
+  await tapKey(page, 0, 0, 60);
+  expect((await boostState(page))?.energy).toBe(1);
+});
+
+test('an assigned controller that disconnects mid-boost pauses it and freezes its timer; after recovery the boost starts again from its intro', async ({ page }) => {
+  test.setTimeout(90000);
+  const errors = errorsOf(page);
+  await startController(page, { count: 2, boost: { ...easy, seconds: 20 } });
+  await recordBoost(page);
+  await startBoostRound(page, 2);
+  await setButtons(page, [0]); await page.waitForTimeout(120); await setButtons(page, []);
+  await page.waitForTimeout(800);
+  await setConnected(page, false);
+  await expect(page.getByRole('dialog')).toContainText('disconnected');
+  const frozen = (await boostState(page))!;
+  expect(frozen).toMatchObject({ phase: 'live', paused: true });
+  await page.waitForTimeout(2000);
+  expect((await boostState(page))!.phaseTime).toBe(frozen.phaseTime);
+  await setConnected(page, true);
+  await page.getByRole('button', { name: 'Reconnect & check switches' }).click();
+  await mapAndCheck(page, 2);
+  await page.getByRole('button', { name: 'Resume journey' }).click();
+  await expect(page.locator('.sp-st')).toHaveCount(2);
+  expect(await boostFlow(page)).toBe('waiting');
+  expect(await boostState(page)).toBeNull();
+  await expect(page.locator('.sp-btop')).toHaveCount(0);
+  for (const card of await page.locator('.sp-st').all()) await expect(card).toHaveCSS('opacity', '1');
+  await page.getByRole('button', { name: 'Boost round!' }).click();
+  await expect.poll(() => boostState(page)).toMatchObject({ phase: 'intro', energy: 0 });
+  await expect.poll(() => boostPhase(page), { timeout: 10000 }).toBe('live');
+  expect(errors).toEqual([]);
+});
+
+test('enlarged turns: the boost still has one saucer per pupil, and the single station comes back afterwards', async ({ page }) => {
+  test.setTimeout(60000);
+  const errors = errorsOf(page);
+  await startGame(page, { count: 3, enlarged: true, boost: { autoStart: false, seconds: 12, difficulty: 'easy' } });
+  for (let turn = 1; turn <= 3; turn++) {
+    await page.getByRole('button', { name: `Pass player ${turn}`, exact: true }).click();
+    if (turn < 3) await page.getByRole('button', { name: 'Next player' }).click();
+  }
+  await page.getByRole('button', { name: 'Boost round!' }).click();
+  await expect(page.locator('.sp-bsaucer')).toHaveCount(3);
+  await expect.poll(() => boostPhase(page), { timeout: 10000 }).toBe('live');
+  await mash(page, { mode: 'keys', pupils: [0, 1, 2], ms: 15000, untilNotLive: true });
+  await expect.poll(() => boostFlow(page), { timeout: 15000 }).toBe('done');
+  await expect(nextButton(page)).toHaveText(/Next round/);
+  await expect(page.locator('.sp-st')).toHaveCount(1);
+  await expect(page.locator('.sp-st').first()).toHaveCSS('opacity', '1');
+  expect(errors).toEqual([]);
 });

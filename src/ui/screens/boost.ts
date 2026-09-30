@@ -261,7 +261,7 @@ export function createBoostScreen(env: BoostEnv): BoostScreen {
       if (s.wrap && !r.wrapShown && s.finaleTier) {
         r.wrapShown = true;
         hideHud(r);
-        r.cards.badge(s.finaleTier);
+        r.cards.badge(s.finaleTier, r.config.destination !== null);
         r.saucers.forEach((saucer, i) => gsap.delayedCall(i * 0.07, () => saucer.cheer()));
       }
     },

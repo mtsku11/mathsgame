@@ -197,7 +197,7 @@ color:#FFD23F;
 text-shadow:0 12px 0 #5A2A00,0 0 80px rgba(255,210,63,.7)}
 .sp-bword{
 left:830px;
-top:96px;
+top:116px;
 font-size:64px;
 color:#FFD23F;
 text-shadow:0 6px 0 #5A2A00,0 0 30px rgba(255,210,63,.8);
@@ -215,6 +215,13 @@ white-space:nowrap;
 color:#4A2300;
 background:linear-gradient(180deg,#FFE58A 0%,var(--sp-gold) 55%,#FFB020 100%);
 box-shadow:0 0 0 6px #0C0830,0 0 0 10px #FFB020,0 12px 0 6px #0C0830,0 0 60px rgba(255,210,63,.55)}
+.sp-bbadge.is-aside{
+left:40px;
+right:auto;
+top:292px;
+margin:0;
+padding:14px 40px 18px;
+font-size:64px}
 .sp-bgiant{
 left:0;
 right:0;

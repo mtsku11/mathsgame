@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { openSetup, enterSetup, answerCorrectly } from '../helpers';
+import { openSetup, enterSetup, answerCorrectly, mash, nextButton, passAll, setBoost } from '../helpers';
 import { createServer, type Server } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { resolve, extname } from 'node:path';
@@ -38,6 +38,7 @@ test('production reloads offline, completes a mission, and defers updates until 
   await expect(page.locator('#offline-status')).toHaveText('Ready offline');
   expect(await page.evaluate(() => navigator.onLine)).toBe(false);
   await page.getByLabel('Crew size').selectOption('4');
+  await setBoost(page, false);
   await page.getByLabel('Keyboard & on-screen buttons').check();
   await page.getByRole('button', { name: 'Enter practice' }).click();
   await page.getByRole('button', { name: 'Launch the journey' }).click();
@@ -72,5 +73,38 @@ test('production reloads offline, completes a mission, and defers updates until 
   await page.reload();
   await enterSetup(page);
   await expect(page.locator('#offline-status')).toHaveText('Ready offline');
+  expect(errors).toEqual([]);
+});
+
+test('production plays a Warp Drive boost round offline, including the lazily loaded effects chunks', async ({ page, context }) => {
+  test.setTimeout(90000);
+  const errors: string[] = [], failed: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+  page.on('requestfailed', request => failed.push(request.url()));
+  await openSetup(page, origin);
+  await expect(page.locator('#offline-status')).toHaveText('Ready offline');
+  await context.setOffline(true);
+  await page.reload();
+  await enterSetup(page);
+  await page.getByLabel('Crew size').selectOption('4');
+  await setBoost(page, { autoStart: false, seconds: 20, difficulty: 'easy' });
+  await page.getByLabel('Keyboard & on-screen buttons').check();
+  await page.getByRole('button', { name: 'Enter practice' }).click();
+  await page.getByRole('button', { name: 'Launch the journey' }).click();
+  await passAll(page, 4);
+  await page.getByRole('button', { name: 'Boost round!' }).click();
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Skip boost round' }).click();
+  await nextButton(page).click();
+  await passAll(page, 4);
+  await page.getByRole('button', { name: 'Boost round!' }).click();
+  await expect(page.locator('.fx-canvas')).toHaveCount(1);
+  await page.waitForTimeout(5000);
+  await mash(page, { mode: 'keys', pupils: [0, 1, 2, 3], ms: 6000 });
+  await expect(page.locator('.sp-bbadge')).toHaveText('Mega boost!', { timeout: 15000 });
+  await expect(page.locator('.sp-dest-name')).toHaveText('Candy Planet');
+  await expect(nextButton(page)).toBeVisible({ timeout: 10000 });
+  expect(failed).toEqual([]);
   expect(errors).toEqual([]);
 });

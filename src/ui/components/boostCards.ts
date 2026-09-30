@@ -15,7 +15,8 @@ export interface BoostCards {
   count(value: number): void;
   go(): void;
   word(tier: BoostTier): void;
-  badge(tier: BoostTier): void;
+  // `aside` moves the badge to the left third, clear of the hub, for rounds where the hub is back on screen showing the crew's arrival.
+  badge(tier: BoostTier, aside: boolean): void;
   hideBadge(): void;
 }
 
@@ -67,8 +68,9 @@ export function createBoostCards(): BoostCards {
         .fromTo(word, { scale: 1.4, opacity: 0, rotation: -6 }, { scale: 1, opacity: 1, rotation: -6, duration: 0.4, ease: 'elastic.out(1,0.5)' })
         .to(word, { y: -50, opacity: 0, duration: 0.35, ease: 'power1.in' }, 0.4 + HOLD_WORD_SECONDS);
     },
-    badge(tier) {
+    badge(tier, aside) {
       badge.textContent = tierBadges[tier];
+      badge.classList.toggle('is-aside', aside);
       show(badge, { scale: 0.3, opacity: 0, y: 30 }, { scale: 1, opacity: 1, y: 0, duration: 0.5, ease: 'back.out(2.2)' });
     },
     hideBadge() { hide(badge, { y: -30 }); },

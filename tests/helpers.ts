@@ -133,7 +133,8 @@ export async function mash(page: Page, { mode, pupils, ms = 4000, step = 50, unt
     let tick = 0;
     const held = new Set<string>();
     const end = performance.now() + ms;
-    const boost = (window as unknown as { __nc: { boost: { state: { phase: string } | null } } }).__nc.boost;
+    // Only the dev server exposes the running modules; production builds can mash for a fixed time.
+    const boost = (window as unknown as { __nc?: { boost: { state: { phase: string } | null } } }).__nc?.boost;
     const release = (): void => {
       if (mode === 'xac') window.dispatchEvent(new CustomEvent('mock-buttons', { detail: [] }));
       else held.forEach(code => window.dispatchEvent(new KeyboardEvent('keyup', { code })));
@@ -150,31 +151,31 @@ export async function mash(page: Page, { mode, pupils, ms = 4000, step = 50, unt
         if (!on && held.has(code)) { held.delete(code); window.dispatchEvent(new KeyboardEvent('keyup', { code })); }
       }
       if (mode === 'xac') window.dispatchEvent(new CustomEvent('mock-buttons', { detail: down }));
-      if (performance.now() >= end || (untilNotLive && boost.state?.phase !== 'live')) { clearInterval(id); release(); resolve(); }
+      if (performance.now() >= end || (untilNotLive && boost?.state?.phase !== 'live')) { clearInterval(id); release(); resolve(); }
     }, step);
   }), { mode, pupils, ms, step, untilNotLive, keys: pupilKeys });
 }
 
 // A shared Xbox Adaptive Controller simulated through navigator.getGamepads; `setButtons` presses the listed buttons (two per pupil: 0,1 / 2,3 / 4,5 / 6,7).
+// `setConnected(page, false)` unplugs it; plugging it back in reports it in a different slot, as a real one may.
 export async function installXac(page: Page): Promise<void> {
   await page.addInitScript(() => {
     let pressed: number[] = [];
-    Object.defineProperty(navigator, 'getGamepads', { value: () => [{
-      index: 0, id: 'Simulated XAC', connected: true, mapping: 'standard', axes: [0, 1],
+    let connected = true;
+    let slot = 0;
+    Object.defineProperty(navigator, 'getGamepads', { value: () => [connected ? {
+      index: slot, id: 'Simulated XAC', connected: true, mapping: 'standard', axes: [0, 1],
       buttons: Array.from({ length: 8 }, (_, i) => ({ pressed: pressed.includes(i), value: pressed.includes(i) ? 1 : 0 })),
-    }] });
+    } : null] });
     window.addEventListener('mock-buttons', event => { pressed = (event as CustomEvent<number[]>).detail; });
+    window.addEventListener('mock-connection', event => { connected = (event as CustomEvent<boolean>).detail; if (connected) slot = 2; });
   });
 }
 export const setButtons = (page: Page, buttons: number[]): Promise<void> => page.evaluate(detail => { window.dispatchEvent(new CustomEvent('mock-buttons', { detail })); }, buttons);
+export const setConnected = (page: Page, connected: boolean): Promise<void> => page.evaluate(detail => { window.dispatchEvent(new CustomEvent('mock-connection', { detail })); }, connected);
 
-// Setup, learn and check every switch on the simulated XAC, and launch the journey.
-export async function startController(page: Page, { count = 4, boost = false }: { count?: number; boost?: BoostOptions | false } = {}): Promise<void> {
-  await installXac(page);
-  await openSetup(page);
-  await page.getByLabel('Crew size').selectOption(String(count));
-  await setBoost(page, boost);
-  await page.getByRole('button', { name: 'Set up the switches' }).click();
+// On the switch-setup screen: learn every switch, then check each one in practice.
+export async function mapAndCheck(page: Page, count: number): Promise<void> {
   const tap = async (buttons: number[]): Promise<void> => { await setButtons(page, buttons); await page.waitForTimeout(150); };
   for (let i = 0; i < count * 2; i++) {
     await page.locator('.map-button').nth(i).click();
@@ -186,6 +187,16 @@ export async function startController(page: Page, { count = 4, boost = false }: 
   await page.waitForTimeout(600);
   await tap(Array.from({ length: count }, (_, i) => i * 2)); await tap([]); await page.waitForTimeout(600);
   await tap(Array.from({ length: count }, (_, i) => i * 2 + 1)); await tap([]);
+}
+
+// Setup, learn and check every switch on the simulated XAC, and launch the journey.
+export async function startController(page: Page, { count = 4, boost = false }: { count?: number; boost?: BoostOptions | false } = {}): Promise<void> {
+  await installXac(page);
+  await openSetup(page);
+  await page.getByLabel('Crew size').selectOption(String(count));
+  await setBoost(page, boost);
+  await page.getByRole('button', { name: 'Set up the switches' }).click();
+  await mapAndCheck(page, count);
   await page.getByRole('button', { name: 'Launch the journey' }).click();
   await expect(page.locator('.sp-st').first()).toBeVisible();
   await page.waitForTimeout(300);
