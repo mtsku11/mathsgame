@@ -46,9 +46,12 @@ export interface BoostScreen extends BoostView { destroy(): void }
 interface Run {
   config: BoostConfig; scene: BoostScene; world: HTMLElement; top: HTMLElement; row: HTMLElement; hud: HTMLElement; beams: SVGPathElement[];
   saucers: Saucer[]; meter: PowerMeter; ring: TimerRing; cards: BoostCards; chrome: Element[]; stationMoves: { el: HTMLElement; x: number; y: number; scale: number }[];
-  countdown: number | null; wrapShown: boolean; fraction: number; nudged: number[]; tier: number; chromeShown: boolean; bolts: Set<() => void>;
+  countdown: number | null; wrapShown: boolean; fraction: number; nudged: number[]; tier: number; chromeShown: boolean; bolts: Set<Bolt>; liveOver: boolean;
   ended: boolean; hudVisible: boolean; sceneGone: boolean; nebulas: Element[]; nebulaBase: number[];
 }
+
+// An energy bolt in flight: kill drops it silently, land delivers it at once (the live phase is over and nothing may still be travelling).
+interface Bolt { kill(): void; land(): void }
 
 const TARGET_FLIGHT = [0.22, 0.28];
 const MAX_BOLTS = 14;
@@ -98,7 +101,7 @@ export function createBoostScreen(env: BoostEnv): BoostScreen {
       burst(target.x, target.y, { count: 8 + Math.floor(Math.random() * 5), colours: [colour, 0xFFFFFF], shapes: ['star', 'sparkle'], size: [10, 18], speed: [80, 220], life: [0.3, 0.6], gravity: 120 });
       r.scene.onPress(saucer.player, r.fraction);
     };
-    if (still()) { r.scene.onPress(saucer.player, r.fraction); return; }
+    if (still() || r.scene.direct) { r.scene.onPress(saucer.player, r.fraction); return; }
     if (r.bolts.size >= MAX_BOLTS) { arrive(); return; }
     const from = { x: saucer.centre.x, y: SAUCER_TOP + 8 };
     const bend = (saucer.player % 2 ? 1 : -1) * (40 + Math.random() * 40);
@@ -112,10 +115,10 @@ export function createBoostScreen(env: BoostEnv): BoostScreen {
         burst(x, y, { count: 1, colours: [colour, 0xFFFFFF], shapes: ['star'], size: [24, 32], speed: [0, 8], life: [0.05, 0.08], gravity: 0, spread: 0 });
         trail(x, y, { colours: [colour, 0xFFFFFF], size: [10, 18], life: [0.25, 0.45] });
       },
-      onComplete() { r.bolts.delete(cancel); arrive(); },
+      onComplete() { r.bolts.delete(bolt); arrive(); },
     });
-    const cancel = (): void => { tween.kill(); };
-    r.bolts.add(cancel);
+    const bolt: Bolt = { kill: () => { tween.kill(); }, land: () => { tween.kill(); arrive(); } };
+    r.bolts.add(bolt);
   }
 
   function nudge(saucer: Saucer): void {
@@ -133,7 +136,7 @@ export function createBoostScreen(env: BoostEnv): BoostScreen {
 
   function teardown(r: Run): void {
     r.ended = true;
-    r.bolts.forEach(cancel => cancel());
+    r.bolts.forEach(bolt => bolt.kill());
     r.bolts.clear();
     unmountScene(r);
     r.world.remove();
@@ -145,7 +148,7 @@ export function createBoostScreen(env: BoostEnv): BoostScreen {
   function finish(r: Run, fast: boolean): void {
     run = null;
     r.ended = true;
-    r.bolts.forEach(cancel => cancel());
+    r.bolts.forEach(bolt => bolt.kill());
     r.bolts.clear();
     gsap.globalTimeline.paused(false);
     r.cards.hideBadge();
@@ -200,7 +203,7 @@ export function createBoostScreen(env: BoostEnv): BoostScreen {
       const scene = createScene(config.theme);
       const r: Run = {
         config, scene, world, top, row, hud, beams: [], saucers, meter, ring, cards, stationMoves: [], countdown: null, wrapShown: false, fraction: 0, nudged: saucers.map(() => 0), tier: 0,
-        chrome: [...env.root.children].filter(child => child.matches(CHROME)), chromeShown: false, bolts: new Set(), ended: false, hudVisible: false, sceneGone: false,
+        chrome: [...env.root.children].filter(child => child.matches(CHROME)), chromeShown: false, bolts: new Set(), liveOver: false, ended: false, hudVisible: false, sceneGone: false,
         nebulas: [...env.stage.element.querySelectorAll('.sp-neb')], nebulaBase: [],
       };
       r.nebulaBase = r.nebulas.map(nebula => Number(getComputedStyle(nebula).opacity));
@@ -215,7 +218,8 @@ export function createBoostScreen(env: BoostEnv): BoostScreen {
       beams.setAttribute('class', 'sp-bbeams');
       beams.setAttribute('viewBox', '0 0 1280 720');
       const target = scene.target;
-      beams.innerHTML = saucers.map(saucer => {
+      // A scene that reacts at the press itself (fireworks) has nothing for a beam to point at.
+      beams.innerHTML = scene.direct ? '' : saucers.map(saucer => {
         const bend = (saucer.player % 2 ? 1 : -1) * 60;
         return `<path class="sp-bbeam sp-p${saucer.player}" d="M${saucer.centre.x} ${SAUCER_TOP + 8} Q ${(saucer.centre.x + target.x) / 2 + bend} ${(SAUCER_TOP + target.y) / 2} ${target.x} ${target.y}" style="stroke:${pilotColors[saucer.player].color}"/>`;
       }).join('');
@@ -260,7 +264,7 @@ export function createBoostScreen(env: BoostEnv): BoostScreen {
         if (due > r.nudged[i]) nudge(saucer);
         r.nudged[i] = due;
       });
-      r.beams.forEach((beam, i) => { const opacity = (0.2 + 0.7 * (s.heat[i] ?? 0)).toFixed(2); if (beam.style.opacity !== opacity) beam.style.opacity = opacity; });
+      if (!r.liveOver) r.beams.forEach((beam, i) => { const opacity = (0.2 + 0.7 * (s.heat[i] ?? 0)).toFixed(2); if (beam.style.opacity !== opacity) beam.style.opacity = opacity; });
       if (s.wrap && !r.wrapShown && s.finaleTier) {
         r.wrapShown = true;
         hideHud(r);
@@ -308,6 +312,12 @@ export function createBoostScreen(env: BoostEnv): BoostScreen {
       r.saucers.forEach(saucer => saucer.setMood('cheer'));
       r.row.classList.remove('is-live');
       hideHud(r);
+      // The live phase is over: bolts still travelling land now and the beams fade, so nothing of the pressing lingers into the payoff.
+      r.liveOver = true;
+      const landing = [...r.bolts];
+      r.bolts.clear();
+      landing.forEach(bolt => bolt.land());
+      if (r.beams.length) gsap.to(r.beams, { autoAlpha: 0, duration: 0.3, overwrite: 'auto' });
       void r.scene.playFinale(tier).catch(error => console.warn('Boost finale failed; continuing.', error));
     },
     arrive() {

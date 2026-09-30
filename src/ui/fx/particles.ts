@@ -53,6 +53,15 @@ export function burst(x: number, y: number, options: BurstOptions = {}): void {
   }
 }
 
+// Lower level than `burst`: the caller shapes every particle (a ring, a star outline, a face). `count` is what the caller would spawn in full; make(i, n) is called n times,
+// with n already cut for low stimulation, so a pattern places particle i at the fraction i / n of its outline.
+export function pattern(count: number, make: (i: number, n: number) => ParticleSpec): void {
+  if (!active()) return;
+  const n = scaled(count);
+  for (let i = 0; i < n; i++) spawn(make(i, n));
+}
+export const rand = (): number => random();
+
 // One call per frame from a moving point; leaves a short fading wake.
 export function trail(x: number, y: number, options: { colours?: number[]; size?: Range; life?: Range } = {}): void {
   if (!active() || random() > factor()) return;

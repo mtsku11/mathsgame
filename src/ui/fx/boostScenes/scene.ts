@@ -1,7 +1,8 @@
 import type { Application } from 'pixi.js';
 import type { BoostTheme, BoostTier } from '../../../app/events';
 import { pilotColors } from '../../art/pilot';
-import { createPlaceholderScene } from './placeholder';
+import { createBubbleBlastScene } from './bubbleBlast';
+import { createFireworkFrenzyScene } from './fireworkFrenzy';
 import { createWarpDriveScene } from './warpDrive';
 
 export interface Point { x: number; y: number }
@@ -25,6 +26,8 @@ export interface SceneContext {
 export interface BoostScene {
   // Where bolts land, in 1280x720 stage coordinates.
   readonly target: Point;
+  // The scene reacts at the moment of the press (a rocket leaves the saucer) instead of waiting for a bolt to land, so the view draws no bolts or beams for it.
+  readonly direct?: boolean;
   mount(context: SceneContext): void;
   // A bolt has arrived. `progress` is the meter fill, 0..1.
   onPress(player: number, progress: number): void;
@@ -38,5 +41,5 @@ export interface BoostScene {
 export const colourOf = (player: number): number => parseInt(pilotColors[player].color.slice(1), 16);
 
 export function createScene(theme: BoostTheme): BoostScene {
-  return theme === 'warpDrive' ? createWarpDriveScene() : createPlaceholderScene(theme);
+  return theme === 'warpDrive' ? createWarpDriveScene() : theme === 'fireworkFrenzy' ? createFireworkFrenzyScene() : createBubbleBlastScene();
 }

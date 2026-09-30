@@ -1,5 +1,5 @@
 // Pure particle simulation with no DOM or Pixi imports. Slots [0, count) are alive; a dead slot is refilled by the last live one, so a renderer can mirror the arrays index for index.
-export const SHAPES = ['star', 'sparkle', 'dot', 'strip'] as const;
+export const SHAPES = ['star', 'sparkle', 'dot', 'strip', 'sweet'] as const;
 export type ParticleShape = typeof SHAPES[number];
 
 export interface ParticleSpec {

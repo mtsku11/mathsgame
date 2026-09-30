@@ -205,23 +205,23 @@ transform:rotate(-6deg)}
 .sp-bbadge{
 left:0;
 right:0;
-top:236px;
+top:474px;
 width:max-content;
 margin:0 auto;
-padding:18px 54px 22px;
+padding:12px 46px 16px;
 border-radius:999px;
-font-size:84px;
+font-size:72px;
 white-space:nowrap;
 color:#4A2300;
 background:linear-gradient(180deg,#FFE58A 0%,var(--sp-gold) 55%,#FFB020 100%);
-box-shadow:0 0 0 6px #0C0830,0 0 0 10px #FFB020,0 12px 0 6px #0C0830,0 0 60px rgba(255,210,63,.55)}
+box-shadow:0 0 0 5px #0C0830,0 0 0 9px #FFB020,0 10px 0 5px #0C0830,0 0 50px rgba(255,210,63,.55)}
 .sp-bbadge.is-aside{
-left:40px;
+left:24px;
 right:auto;
-top:292px;
+top:490px;
 margin:0;
-padding:14px 40px 18px;
-font-size:64px}
+padding:8px 30px 12px;
+font-size:50px}
 .sp-bgiant{
 left:0;
 right:0;
@@ -238,17 +238,60 @@ font-size:110px;
 transform:none;
 text-shadow:0 10px 0 #5A2A00,0 0 60px rgba(255,210,63,.9)}
 
-.sp-ph{
+.sp-bgiant.is-firework{
+top:436px;
+color:#fff;
+text-shadow:0 8px 0 #2B1E86,0 0 40px rgba(255,255,255,.7)}
+.sp-bgiant.is-pop{
+right:110px;
+top:50px;
+font-size:168px;
+color:#FF7EC8;
+text-shadow:0 10px 0 #6B2FC9,0 0 50px rgba(255,126,200,.85)}
+
+.sp-fw,.sp-bb{
+position:absolute;
+left:0;
+top:0;
+width:1280px;
+height:720px}
+.sp-fw-horizon,.sp-fw-static{
+position:absolute;
+left:0;
+top:0;
+width:1280px;
+height:720px}
+.sp-fw-static{
+overflow:visible}
+.sp-bb-gloop{
 position:absolute;
 left:490px;
-top:150px;
+top:200px;
 width:300px;
 height:300px}
-.sp-ph .sp-star{
-display:block;
-width:100%;
-height:100%;
-filter:drop-shadow(0 0 30px rgba(255,210,63,.8))}
+.sp-bb-wob,.sp-bb-cluster-wrap{
+position:absolute;
+left:440px;
+top:20px;
+width:400px;
+height:400px}
+.sp-bb-bubble{
+position:absolute;
+left:0;
+top:0;
+width:400px;
+height:400px}
+.sp-gloop,.sp-bubble,.sp-bb-cluster,.sp-splat{
+display:block}
+.sp-bb-ring{
+position:absolute;
+width:300px;
+height:300px;
+border-radius:50%;
+background:radial-gradient(closest-side,rgba(255,190,230,0) 68%,rgba(255,190,230,.95) 86%,rgba(255,190,230,0) 100%)}
+.sp-bb-splat{
+position:absolute;
+pointer-events:none}
 
 .sp-wd{
 position:absolute;
