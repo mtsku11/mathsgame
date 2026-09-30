@@ -6,7 +6,7 @@ export interface Zone { w: number; h: number; max: number; gap: number; plus: nu
 export const zones: Record<Geo, Zone> = {
   1: { w: 740, h: 180, max: 112, gap: 12, plus: 64 },
   2: { w: 468, h: 178, max: 88, gap: 8, plus: 44 },
-  4: { w: 342, h: 102, max: 60, gap: 4, plus: 28 },
+  4: { w: 342, h: 94, max: 60, gap: 4, plus: 28 },
 };
 export const rowLength = 5;
 const badgeRatio = 1.27;

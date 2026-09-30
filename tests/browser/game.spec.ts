@@ -18,8 +18,8 @@ test('four players complete six rounds with teacher support; no console errors',
     await page.getByRole('button', { name: 'Pass player 4', exact: true }).click();
     await nextButton(page, nextName(round)).click();
   }
-  await expect(page.locator('.result-stars')).toContainText('0 crew stars collected');
-  await expect(page.getByText('A whole crew.')).toBeVisible();
+  await expect(page.locator('.sp-fin-stars')).toContainText('0 crew stars collected');
+  await expect(page.getByRole('heading', { name: 'Mission complete!', level: 1 })).toBeVisible();
   expect(errors).toEqual([]);
 });
 
@@ -54,8 +54,8 @@ test('stars join the mothership and completed rounds fill the journey', async ({
       await expect(page.locator('.sp-dest-name')).toHaveText('Frosty Moon');
     }
   }
-  await expect(page.locator('.result-planets .planet.revealed')).toHaveCount(3);
-  await expect(page.locator('.result-assembly .mission-part.complete')).toHaveCount(6);
+  await expect(page.locator('.sp-fin-route li')).toHaveCount(3);
+  await expect(page.locator('.sp-fin-pips .sp-pip.is-done')).toHaveCount(6);
 });
 
 test('help does not answer, pause preserves question, blur pauses', async ({ page }) => {
@@ -199,7 +199,7 @@ for (const count of [3, 4]) {
       // The per-pupil 500 ms cooldown survives round transitions.
       await page.waitForTimeout(600);
     }
-    await expect(page.locator('.result-stars')).toContainText(`${6 * count} crew stars collected`);
+    await expect(page.locator('.sp-fin-stars')).toContainText(`${6 * count} crew stars collected`);
     await page.getByRole('button', { name: 'Another adventure' }).click();
     await expect(page.getByRole('button', { name: 'Launch the journey' })).toBeVisible();
     await page.getByRole('button', { name: 'Launch the journey' }).click();
@@ -218,7 +218,7 @@ for (const count of [1, 2]) {
       await page.getByRole('button', { name: nextName(round) }).click();
       await page.waitForTimeout(600);
     }
-    await expect(page.locator('.result-stars')).toContainText(`${6 * count} crew stars collected`);
+    await expect(page.locator('.sp-fin-stars')).toContainText(`${6 * count} crew stars collected`);
   });
 }
 

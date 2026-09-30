@@ -13,10 +13,10 @@ export async function openSetup(page: Page, url = './'): Promise<void> {
   await enterSetup(page);
 }
 
-export interface StartOptions { count?: number; enlarged?: boolean; url?: string; presets?: string[]; pictures?: boolean; autoAdvance?: number; reduced?: boolean; quiet?: boolean }
+export interface StartOptions { count?: number; enlarged?: boolean; url?: string; presets?: string[]; pictures?: boolean; autoAdvance?: number; reduced?: boolean; quiet?: boolean; beforeLaunch?: (page: Page) => Promise<void> }
 
 // Opens teacher setup, chooses keyboard input and launches the mission on the stage play screen.
-export async function startGame(page: Page, { count = 4, enlarged = false, url = './', presets = [], pictures = false, autoAdvance = 0, reduced = false, quiet = false }: StartOptions = {}): Promise<void> {
+export async function startGame(page: Page, { count = 4, enlarged = false, url = './', presets = [], pictures = false, autoAdvance = 0, reduced = false, quiet = false, beforeLaunch }: StartOptions = {}): Promise<void> {
   await openSetup(page, url);
   await page.getByLabel('Crew size').selectOption(String(count));
   if (enlarged) await page.getByLabel('Screen layout').selectOption('enlarged');
@@ -31,6 +31,7 @@ export async function startGame(page: Page, { count = 4, enlarged = false, url =
   }
   await page.getByLabel('Keyboard & on-screen buttons').check();
   await page.getByRole('button', { name: 'Enter practice' }).click();
+  await beforeLaunch?.(page);
   await page.getByRole('button', { name: 'Launch the journey' }).click();
   await expect(page.locator('.sp-st').first()).toBeVisible();
   await page.waitForTimeout(150);
@@ -58,3 +59,24 @@ export const passAll = async (page: Page, count: number): Promise<void> => {
   for (let pupil = 1; pupil <= count; pupil++) await page.getByRole('button', { name: `Pass player ${pupil}`, exact: true }).click();
 };
 export const nextButton = (page: Page, name = /^(Next round|Finish journey|Next player)$/): Locator => page.getByRole('button', { name });
+
+// Default keyboard bindings: left/right keys per pupil, as configured in settings.
+export const pupilKeys = [['KeyF', 'KeyJ'], ['KeyA', 'KeyL'], ['KeyC', 'KeyM'], ['KeyQ', 'KeyP']] as const;
+export async function tapKey(page: Page, player: number, side: number, holdMs = 40): Promise<void> {
+  const code = pupilKeys[player][side];
+  await page.evaluate(([value]) => { window.dispatchEvent(new KeyboardEvent('keydown', { code: value, key: value.slice(3).toLowerCase() })); }, [code]);
+  await page.waitForTimeout(holdMs);
+  await page.evaluate(([value]) => { window.dispatchEvent(new KeyboardEvent('keyup', { code: value })); }, [code]);
+}
+
+export const momentEvents = ['answerCorrect', 'answerTry', 'turnHelped', 'turnPassed', 'roundReady', 'roundStart', 'destinationReached', 'missionComplete'] as const;
+// Records every moment event the game emits from now on; read them back with `recorded`.
+export async function recordEvents(page: Page): Promise<void> {
+  await page.evaluate(async names => {
+    const { events } = await import('/src/app/events.ts');
+    const log: { name: string; payload: unknown }[] = [];
+    (window as unknown as { __events: typeof log }).__events = log;
+    for (const name of names) events.on(name as never, ((payload: unknown) => { log.push({ name, payload }); }) as never);
+  }, [...momentEvents]);
+}
+export const recorded = (page: Page): Promise<{ name: string; payload: unknown }[]> => page.evaluate(() => (window as unknown as { __events: { name: string; payload: unknown }[] }).__events);

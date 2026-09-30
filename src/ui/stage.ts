@@ -9,6 +9,14 @@ let scale = 1;
 export const stageScale = (): number => scale;
 export const stageElement = (): HTMLElement | null => active?.element ?? null;
 
+// Centre of an element in logical stage coordinates (1280x720), whatever the current window scale.
+export function stagePoint(target: Element, ax = 0.5, ay = 0.5): { x: number; y: number } {
+  const stage = active?.element.getBoundingClientRect();
+  const box = target.getBoundingClientRect();
+  if (!stage) return { x: box.left + box.width * ax, y: box.top + box.height * ay };
+  return { x: (box.left + box.width * ax - stage.left) / scale, y: (box.top + box.height * ay - stage.top) / scale };
+}
+
 export function createStage(parent: HTMLElement): Stage {
   active?.destroy();
   const viewport = document.createElement('div');

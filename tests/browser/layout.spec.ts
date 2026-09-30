@@ -95,6 +95,47 @@ for (const { width, height } of sizes) {
   }
 }
 
+// The "+" and the second group must sit on the star rows (not on the badge slot under them), and a wrapped first group must not crowd the prompt or the answers.
+for (const count of [1, 2, 4]) {
+  test(`addition groups with wrapped rows are centred as one unit and clear of prompt and answers with ${count} pupils`, async ({ page }) => {
+    await startGame(page, { count, presets: ['add10', 'add10', 'add10', 'add10'].slice(0, count), url: './?instant' });
+    await page.evaluate(() => document.fonts.load('64px "Titan One"').then(() => document.fonts.ready));
+    const rows = await page.evaluate(async () => {
+      const { objectsMarkup, starSize, zones, geoOf } = await import('/src/ui/components/objects.ts');
+      const card = document.querySelector('.sp-st')!, objs = card.querySelector<HTMLElement>('.sp-objs')!;
+      const geo = geoOf(document.querySelectorAll('.sp-st').length);
+      card.classList.add('is-helped');
+      const mid = (rects: DOMRect[]) => (Math.min(...rects.map(r => r.top)) + Math.max(...rects.map(r => r.bottom))) / 2;
+      const out: { groups: string; plus: number; second: number; answers: number; prompt: number; inside: boolean }[] = [];
+      for (let a = 1; a < 10; a++) for (let b = 1; a + b <= 10; b++) {
+        const groups = [a, b];
+        objs.innerHTML = objectsMarkup(groups);
+        objs.style.setProperty('--s', `${starSize(groups, zones[geo])}px`);
+        const stars = [...objs.querySelectorAll('.sp-star')].map(element => element.getBoundingClientRect());
+        const second = [...objs.querySelectorAll('.sp-grp')][1].querySelectorAll('.sp-star');
+        const range = document.createRange();
+        range.selectNodeContents(objs.querySelector('.sp-plus')!);
+        const plus = range.getBoundingClientRect();
+        const items = [...objs.querySelectorAll('.sp-obj')].map(element => element.getBoundingClientRect());
+        const zone = objs.getBoundingClientRect();
+        out.push({ groups: groups.join('+'), plus: (plus.top + plus.bottom) / 2 - mid(stars), second: mid([...second].map(element => element.getBoundingClientRect())) - mid(stars),
+          answers: card.querySelector('.sp-ans')!.getBoundingClientRect().top - Math.max(...items.map(r => r.bottom)),
+          prompt: Math.min(...items.map(r => r.top)) - card.querySelector('.sp-prompt')!.getBoundingClientRect().bottom,
+          inside: items.every(r => r.top >= zone.top - 0.5 && r.bottom <= zone.bottom + 0.5) });
+      }
+      return out;
+    });
+    expect(rows).toHaveLength(45);
+    for (const row of rows) {
+      expect(Math.abs(row.plus), `plus ${row.groups}`).toBeLessThanOrEqual(2);
+      expect(Math.abs(row.second), `second group ${row.groups}`).toBeLessThanOrEqual(1);
+      expect(row.inside, `inside zone ${row.groups}`).toBe(true);
+      expect(row.answers, `answers ${row.groups}`).toBeGreaterThanOrEqual(6);
+      expect(row.prompt, `prompt ${row.groups}`).toBeGreaterThanOrEqual(count === 4 ? 3 : 20);
+    }
+  });
+}
+
 test('picture answers stay inside their buttons at 720p', async ({ page }) => {
   await startGame(page, { count: 2, presets: ['add10', 'add10'], pictures: true, url: './?instant' });
   for (let round = 1; round <= 3; round++) {

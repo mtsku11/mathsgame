@@ -7,7 +7,8 @@ import { createAnswerButton, type AnswerButton, type AnswerLook } from './answer
 import { objectsMarkup, starSize, zones, type Geo } from './objects';
 
 export interface StationState { player: number; question: Question; outcome: Turn['outcome']; attempts: number; supported: boolean; picture: boolean; paused: boolean }
-export interface Station { el: HTMLElement; mount(parent: HTMLElement): void; update(state: StationState): void; press(side: Side): void; destroy(): void }
+export interface StationParts { pilot: HTMLElement; objs: HTMLElement; buttons: [HTMLElement, HTMLElement] }
+export interface Station { el: HTMLElement; parts: StationParts; mount(parent: HTMLElement): void; update(state: StationState): void; press(side: Side): void; destroy(): void }
 
 const pillText = { right: 'Star sent!', passed: 'With the crew', helped: 'Count with me', tried: 'Try again' } as const;
 
@@ -38,6 +39,7 @@ export function createStation(slot: number, geo: Geo): Station {
 
   return {
     el,
+    parts: { pilot: crew, objs, buttons: [buttons[0].el, buttons[1].el] },
     mount(parent) { parent.append(el); },
     update(state) {
       const { question: q, outcome } = state;

@@ -9,11 +9,14 @@ import { seededRandom, type Preset, type Side } from './game/questions';
 import { createSession, answer, advance, pass, ready, type Session } from './game/session';
 import { InputFilter, type Pair } from './input/normalize';
 import { Calibration, ConnectionHistory, describeDevice, readDevices, down, type Binding, type Device } from './input/gamepad';
-import { marker, markers, missionPart, rocket, planet } from './ui/art';
+import { marker, markers, rocket, planet } from './ui/art';
 import { TransitionTimer } from './game/transition';
 import { registerOffline } from './offline/register';
+import { events } from './app/events';
 import { createRouter, type Screen } from './app/router';
 import { createTitleScreen } from './ui/screens/title';
+import { destinationOf } from './ui/art/planets';
+import { createFinaleScreen, type FinaleState } from './ui/screens/finale';
 import { createPlayScreen, type PlayState } from './ui/screens/play';
 import { setLowStim, setReducedMotion } from './ui/fx/motion';
 
@@ -54,6 +57,7 @@ const keys = new Set<string>();
 const transition = new TransitionTimer();
 let audio: AudioContext | null = null;
 let lastDiagnostic = '';
+let readyRound = 0;
 const connectionHistory = new ConnectionHistory();
 
 function emptyPairs(): Pair[] { return Array.from({ length: 4 }, () => [false, false]); }
@@ -64,6 +68,10 @@ const players = (count: number): string => `${count} player${count === 1 ? '' : 
 const checked = (value: boolean): string => value ? 'checked' : '';
 const selected = (value: boolean): string => value ? 'selected' : '';
 function resetInput(): void { filter.reset(); pulses = emptyPairs(); }
+// Fires once per round, the first time every station has an outcome.
+function noteReady(): void {
+  if (session && !session.finished && ready(session) && readyRound !== session.round) { readyRound = session.round; events.emit('roundReady', { round: session.round }); }
+}
 function announce(message: string): void { announcer.textContent = message; }
 function missionAnnouncement(): string {
   if (!session) return '';
@@ -130,26 +138,35 @@ function playState(): PlayState {
   const shown = settings.enlarged ? [current.active] : Array.from({ length: settings.count }, (_, i) => i);
   const resolved = settings.enlarged ? current.turns[current.active].outcome !== 'waiting' : ready(current);
   return {
-    players: shown.length, round: current.round, completed: current.history.length, stars: current.stars,
+    players: shown.length, round: current.round, completed: current.history.length, stars: current.stars, ready: ready(current),
     stations: shown.map(player => { const turn = current.turns[player]; return { player, question: turn.question, outcome: turn.outcome, attempts: turn.attempts, supported: turn.supported, picture: settings.players[player].quantities, paused }; }),
     next: resolved ? settings.enlarged && current.active < settings.count - 1 ? 'Next player' : current.round === 6 ? 'Finish journey' : 'Next round' : null,
     turn: settings.enlarged ? `Player ${current.active + 1} of ${settings.count}` : '',
     pause: { paused, reason: pauseReason, recovering, quiet: settings.quiet, volume: settings.effectsVolume },
   };
 }
-function results(): string {
-  return `<main class="results page"><p class="eyebrow">MISSION COMPLETE</p><h1>A whole crew.<br>A brilliant journey.</h1><div class="result-planets">${[0, 1, 2].map(i => planet(i, true)).join('')}${rocket()}</div><div class="mission-parts result-assembly">${Array.from({ length: 6 }, (_, i) => missionPart(i, true)).join('')}</div><p class="result-stars">✦ ${session!.stars} crew stars collected</p><p>You counted. You explored. You got there together.</p><div class="button-row"><button class="primary" data-action="replay">Another adventure →</button><button data-action="setup">Teacher setup</button></div><details class="summary"><summary>Teacher observation · this session only</summary><p>Two choices include a chance element. This is observation, not an attainment score.</p><table><thead><tr><th>Station</th><th>First try</th><th>Retry</th><th>Supported</th><th>Passed</th></tr></thead><tbody>${presets().map((_, i) => { const turns = session!.history.map(round => round[i]); return `<tr><th>Player ${i + 1}</th><td>${turns.filter(t => t.outcome === 'correct' && t.attempts === 1 && !t.supported).length}</td><td>${turns.filter(t => t.outcome === 'correct' && t.attempts > 1 && !t.supported).length}</td><td>${turns.filter(t => t.outcome === 'correct' && t.supported).length}</td><td>${turns.filter(t => t.outcome === 'passed').length}</td></tr>`; }).join('')}</tbody></table><p>Results disappear when you start again. No pupil data is saved.</p></details></main>`;
+function finaleState(): FinaleState {
+  const current = session!;
+  return {
+    players: settings.count, stars: current.stars, offline: offlineStatus, canUpdate: Boolean(applyUpdate),
+    rows: presets().map((_, i) => {
+      const turns = current.history.map(round => round[i]);
+      return { player: i + 1, first: turns.filter(t => t.outcome === 'correct' && t.attempts === 1 && !t.supported).length, retry: turns.filter(t => t.outcome === 'correct' && t.attempts > 1 && !t.supported).length,
+        supported: turns.filter(t => t.outcome === 'correct' && t.supported).length, passed: turns.filter(t => t.outcome === 'passed').length };
+    }),
+  };
 }
 function render(): void {
   if (screen === 'play') { if (router.current() === 'play') play.update(playState()); return; }
+  if (screen === 'results') { if (router.current() === 'finale' && session) finale.update(finaleState()); return; }
   if (!legacyActive) return;
   const focused = document.activeElement as HTMLElement | null;
   const focusId = focused?.id;
   const focusData = focused?.dataset;
   document.body.classList.toggle('reduce-motion', settings.reduced);
   document.body.classList.toggle('simple', settings.simple);
-  app.innerHTML = header() + (screen === 'setup' ? setup() : screen === 'controls' ? controls() : screen === 'results' ? results() : practiceScreen()) +
-    (applyUpdate && (screen === 'setup' || screen === 'results') ? '<div class="update-bar"><button data-action="update">Update game now</button></div>' : '');
+  app.innerHTML = header() + (screen === 'setup' ? setup() : screen === 'controls' ? controls() : practiceScreen()) +
+    (applyUpdate && screen === 'setup' ? '<div class="update-bar"><button data-action="update">Update game now</button></div>' : '');
   if (focusId) document.getElementById(focusId)?.focus();
   else if (focusData?.action) app.querySelector<HTMLElement>(`[data-action="${focusData.action}"]`)?.focus();
   else if (focusData?.answerPlayer) app.querySelector<HTMLElement>(`[data-answer-player="${focusData.answerPlayer}"][data-answer-side="${focusData.answerSide}"]`)?.focus();
@@ -167,7 +184,7 @@ function pause(reason = ''): void {
 }
 function enter(next: View): void {
   screen = next;
-  const target = next === 'play' ? 'play' : 'legacy';
+  const target = next === 'play' ? 'play' : next === 'results' ? 'finale' : 'legacy';
   if (router.current() === target) render(); else router.go(target);
 }
 function preparePractice(): void {
@@ -188,8 +205,11 @@ function perform(action: string): void {
     case 'practice': preparePractice(); return;
     case 'start':
       if (mode === 'controller' && !tested.slice(0, settings.count).every(pair => pair.every(Boolean))) return;
-      if (!recovering) { random = seededRandom(Date.now()); session = createSession(presets(), random); }
-      paused = false; recovering = false; pauseReason = ''; flashes = ['', '', '', '']; resetInput(); enter('play'); announce(missionAnnouncement()); return;
+      const fresh = !recovering;
+      if (fresh) { random = seededRandom(Date.now()); session = createSession(presets(), random); readyRound = 0; }
+      paused = false; recovering = false; pauseReason = ''; flashes = ['', '', '', '']; resetInput(); enter('play');
+      if (fresh) events.emit('roundStart', { round: 1 });
+      announce(missionAnnouncement()); return;
     case 'pause': pause(); return;
     case 'resume':
       paused = false; pauseReason = ''; resetInput(); render();
@@ -199,9 +219,18 @@ function perform(action: string): void {
     case 'pause-back': paused = true; enter('play'); return;
     case 'reconnect': bindings = emptyBindings(); calibration = null; enter('controls'); return;
     case 'next':
-      if (session && !paused && advance(session, presets(), random, settings.enlarged)) {
+      if (session && !paused) {
+        const from = session.round;
+        if (!advance(session, presets(), random, settings.enlarged)) return;
         transition.reset(); flashes = ['', '', '', '']; resetInput();
-        if (session.finished) { sound(); enter('results'); } else render();
+        if (session.finished) { sound(); enter('results'); events.emit('missionComplete', { stars: session.stars }); }
+        else {
+          if (session.round !== from) {
+            events.emit('roundStart', { round: session.round });
+            if (destinationOf(session.round) !== destinationOf(from)) events.emit('destinationReached', { destination: destinationOf(session.round) });
+          }
+          render();
+        }
         announce(session.finished ? `Mission complete. ${session.stars} crew stars collected.` : missionAnnouncement());
       } return;
     case 'replay': newJourneySetup(); return;
@@ -220,9 +249,18 @@ app.addEventListener('click', event => {
   }
   if (button.dataset.answerPlayer !== undefined) { pulses[Number(button.dataset.answerPlayer)][Number(button.dataset.answerSide)] = true; return; }
   if (session && !paused && button.dataset.help !== undefined) {
-    const player = Number(button.dataset.help); session.turns[player].supported = true; render(); announce(`Player ${player + 1}. Count together for help.`);
+    const player = Number(button.dataset.help), turn = session.turns[player];
+    const first = turn.outcome === 'waiting' && !turn.supported;
+    turn.supported = true;
+    if (first) events.emit('turnHelped', { player });
+    render(); announce(`Player ${player + 1}. Count together for help.`);
   }
-  if (session && !paused && button.dataset.pass !== undefined) { const player = Number(button.dataset.pass); pass(session, player); render(); announce(`Player ${player + 1}. Travelling with the crew.`); }
+  if (session && !paused && button.dataset.pass !== undefined) {
+    const player = Number(button.dataset.pass), waiting = session.turns[player].outcome === 'waiting';
+    pass(session, player);
+    if (waiting) { events.emit('turnPassed', { player }); noteReady(); }
+    render(); announce(`Player ${player + 1}. Travelling with the crew.`);
+  }
 });
 app.addEventListener('change', event => {
   const target = event.target as HTMLInputElement;
@@ -315,31 +353,35 @@ function frame(now: number): void {
     for (const { pupil, side } of actions) {
       if (pupil >= settings.count || (settings.enlarged && pupil !== session.active) || session.turns[pupil].outcome !== 'waiting') continue;
       play.press(pupil, side);
-      if (answer(session, pupil, side)) { sound(); announcements.push(`Player ${pupil + 1}. Star sent. Thank you!`); }
-      else { flashes[pupil] = 'Let’s count together. You can try again.'; announcements.push(`Player ${pupil + 1}. ${flashes[pupil]}`); }
+      if (answer(session, pupil, side)) { sound(); events.emit('answerCorrect', { player: pupil, side }); announcements.push(`Player ${pupil + 1}. Star sent. Thank you!`); }
+      else { events.emit('answerTry', { player: pupil, side }); flashes[pupil] = 'Let’s count together. You can try again.'; announcements.push(`Player ${pupil + 1}. ${flashes[pupil]}`); }
       changed = true;
     }
   }
+  noteReady();
   const completed = !!session && !session.finished && ready(session);
   if (transition.sample(now, settings.autoAdvance && completed, screen === 'play' && !paused && !document.hidden, settings.transitionSeconds * 1000)) perform('next');
   if (changed) { render(); if (announcements.length) announce(announcements.join(' ')); }
   requestAnimationFrame(frame);
 }
-const router = createRouter<'title' | 'legacy' | 'play'>(app);
-const play = createPlayScreen(playState);
+const router = createRouter<'title' | 'legacy' | 'play' | 'finale'>(app);
+const play = createPlayScreen(playState, { quality: settings.quality });
+const finale = createFinaleScreen(finaleState, { quality: settings.quality });
 const legacy: Screen = { mount() { legacyActive = true; render(); }, unmount() { legacyActive = false; } };
 router.register('title', createTitleScreen({ quality: settings.quality, onSetup: () => router.go('legacy') }));
 router.register('legacy', legacy);
 router.register('play', play);
+router.register('finale', finale);
 router.go('title');
 registerOffline((status, update) => {
   offlineStatus = status;
   applyUpdate = update;
+  if (router.current() === 'finale' && session) finale.update(finaleState());
   if (!legacyActive) return;
   const label = document.getElementById('offline-status');
   if (label) label.textContent = status;
   const updateBar = app.querySelector('.update-bar');
-  const showUpdate = Boolean(applyUpdate) && (screen === 'setup' || screen === 'results');
+  const showUpdate = Boolean(applyUpdate) && screen === 'setup';
   if (showUpdate && !updateBar) app.insertAdjacentHTML('beforeend', '<div class="update-bar"><button data-action="update">Update game now</button></div>');
   if (!showUpdate) updateBar?.remove();
 });

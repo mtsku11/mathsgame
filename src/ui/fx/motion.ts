@@ -1,4 +1,7 @@
 import { gsap } from 'gsap';
+import { MotionPathPlugin } from 'gsap/MotionPathPlugin';
+
+gsap.registerPlugin(MotionPathPlugin);
 
 declare global { interface Window { __NC_TEST__?: boolean } }
 
@@ -38,3 +41,7 @@ export function idle(target: gsap.TweenTarget, vars: gsap.TweenVars): gsap.core.
   return isCalm() ? null : gsap.to(target, { repeat: -1, yoyo: true, ease: 'sine.inOut', ...vars });
 }
 export const kill = (target: gsap.TweenTarget): void => { gsap.killTweensOf(target); };
+// Real-time hold that ignores reduced-motion snapping (a card that must stay readable) but still collapses in instant mode.
+export const after = (seconds: number, run: () => void): gsap.core.Tween => gsap.delayedCall(seconds, run);
+// Top-level tweens and timelines still alive on the global clock; zero once every moment has finished (looping idles count).
+export const runningMotion = (): number => gsap.globalTimeline.getChildren(false, true, true).length;

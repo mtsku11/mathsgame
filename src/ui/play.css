@@ -44,11 +44,10 @@ to{transform:rotate(360deg)}}
 @keyframes sp-ring{
 0%{transform:scale(.85);opacity:.7}
 100%{transform:scale(1.2);opacity:0}}
-@keyframes sp-wobble{
-0%,70%,100%{transform:rotate(0)}
-76%{transform:rotate(-7deg)}
-84%{transform:rotate(6deg)}
-92%{transform:rotate(-3deg)}}
+@keyframes sp-outline{
+0%{opacity:.2;box-shadow:0 0 0 0 transparent}
+40%{opacity:1;box-shadow:0 0 16px var(--c)}
+100%{opacity:.85;box-shadow:0 0 0 0 transparent}}
 .sp-hud{
 position:absolute;
 left:0;
@@ -209,6 +208,11 @@ fill:currentColor}
 .sp-pip.is-current{
 color:#FFD23F;
 animation:sp-glow 2.2s ease-in-out infinite}
+.sp-pip.is-earned{
+color:#FFD23F;
+animation:none}
+.sp-pip.is-earned path{
+fill:currentColor}
 .sp-round{
 position:absolute;
 left:0;
@@ -385,6 +389,7 @@ line-height:1}
 .sp-st.is-helped .sp-badge{
 visibility:visible}
 .sp-plus{
+margin-top:calc(var(--s) * .18 - var(--b));
 flex:none;
 width:var(--pw);
 text-align:center;
@@ -459,7 +464,7 @@ font-weight:400;
 line-height:1;
 text-shadow:0 4px 0 rgba(26,20,70,.5);
 cursor:pointer;
-transition:transform .08s,box-shadow .08s}
+transition:translate .08s,scale .08s,box-shadow .08s}
 .sp-btn::before{
 content:'';
 position:absolute;
@@ -506,13 +511,14 @@ animation:sp-ring 2.8s ease-out infinite}
 .sp-btn.is-ready + .sp-btn.is-ready::after{
 animation-delay:1.4s}
 .sp-btn.is-pressed,.sp-btn:active:not(:disabled){
-transform:translateY(6px);
+translate:0 6px;
+scale:1.04 .95;
 box-shadow:0 0 0 7px #0C0830,0 0 0 10px color-mix(in oklab,var(--c) 50%,#0C0830),0 3px 0 8px #0C0830}
-.sp-btn.is-try{
-animation:sp-wobble 3s ease-in-out infinite}
 .sp-btn.is-try::after{
 border-style:dashed;
 opacity:.85}
+.sp-btn.is-pulse::after{
+animation:sp-outline .8s ease-out}
 .sp-btn.is-right{
 --c:#FFD23F;
 color:#5A2A00;
@@ -572,9 +578,9 @@ font-size:40px}
 --gap:4px;
 --pw:28px;
 left:148px;
-top:56px;
+top:60px;
 width:342px;
-height:102px}
+height:94px}
 .sp-g4 .sp-ans{
 --btn:116px;
 --num:64px;
@@ -782,8 +788,83 @@ transition:none}
 animation:none;
 opacity:.5;
 transform:none}
-:is(.nc-reduced,.nc-lowstim,.nc-instant) :is(.sp-btn.is-try,.sp-beam,.sp-ship,.sp-halo,.sp-pip.is-current,.sp-dest-planet .sp-planet,.sp-big-planet .sp-planet){
+:is(.nc-reduced,.nc-lowstim,.nc-instant) :is(.sp-beam,.sp-ship,.sp-halo,.sp-pip.is-current,.sp-dest-planet .sp-planet,.sp-big-planet .sp-planet){
 animation:none}
 :is(.nc-reduced,.nc-lowstim,.nc-instant) .sp-stop.is-current::after{
 animation:none;
 opacity:.9}
+
+.sp-fx-layer{
+position:absolute;
+inset:0;
+z-index:6;
+pointer-events:none}
+.sp-fly{
+position:absolute;
+left:0;
+top:0;
+width:56px;
+height:56px;
+will-change:transform}
+.sp-fly .sp-star{
+width:100%;
+height:100%;
+filter:drop-shadow(0 0 12px rgba(255,210,63,.8))}
+.sp-banner{
+position:absolute;
+top:246px;
+z-index:7;
+width:480px;
+display:grid;
+place-items:center;
+pointer-events:none}
+.sp-banner-card{
+margin:0;
+padding:12px 34px 14px;
+border-radius:999px;
+font-family:var(--sp-display);
+font-size:34px;
+line-height:1.1;
+white-space:nowrap;
+color:#4A2300;
+background:linear-gradient(180deg,#FFE58A 0%,var(--sp-gold) 55%,#FFB020 100%);
+box-shadow:0 0 0 4px #0C0830,0 0 0 7px #FFB020,0 8px 0 4px #0C0830,0 0 40px rgba(255,210,63,.5)}
+.sp-ring{
+position:absolute;
+box-sizing:border-box;
+border:4px solid var(--dc,#FFE08A);
+border-radius:50%;
+opacity:0;
+pointer-events:none;
+box-shadow:0 0 18px var(--dc,#FFE08A)}
+.sp-card{
+position:absolute;
+left:50%;
+z-index:3;
+width:190px;
+margin:0 0 0 -95px;
+padding:6px 12px 8px;
+box-sizing:border-box;
+text-align:center;
+border:3px solid var(--dc,#FFE08A);
+border-radius:20px;
+background:rgba(22,14,72,.94);
+box-shadow:0 0 24px color-mix(in oklab,var(--dc,#FFE08A) 45%,transparent);
+pointer-events:none}
+.sp-card small{
+display:block;
+font-size:14px;
+font-weight:800;
+letter-spacing:1.5px;
+text-transform:uppercase;
+color:var(--sp-lilac)}
+.sp-card b{
+display:block;
+font-family:var(--sp-display);
+font-weight:400;
+font-size:26px;
+line-height:1.15;
+color:var(--dc,#FFE08A)}
+.sp-big .sp-card{
+width:260px;
+margin-left:-130px}

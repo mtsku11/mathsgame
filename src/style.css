@@ -564,33 +564,6 @@ bottom:-15px;
 left:calc(-38px + var(--journey-offset));
 transform:rotate(36deg);
 transition:left .55s ease}
-.mission-parts{
-display:flex;
-align-items:center;
-justify-content:center;
-gap:4px;
-position:absolute;
-top:70px;
-left:50%;
-transform:translateX(-50%)}
-.mission-part{
-width:16px;
-height:11px;
-border:1px solid #91a29e;
-border-radius:3px;
-background:#f6f3eb;
-position:relative}
-.mission-part i{
-position:absolute;
-width:1px;
-height:100%;
-left:50%;
-background:#91a29e}
-.mission-part.complete{
-background:#d9a458;
-border-color:#8b672e}
-.mission-part.complete:nth-child(even){
-background:#71a6a1}
 .star-total{
 display:grid;
 grid-template-columns:auto auto;
@@ -751,65 +724,10 @@ margin:0 5px}
 .stations.solo{
 grid-template-columns:minmax(0,900px);
 justify-content:center}
-.results{
-text-align:center;
-padding-top:55px}
-.results h1{
-font-size:56px}
-.results .button-row{
-justify-content:center;
-margin:30px 0}
-.result-planets{
-height:205px;
-display:flex;
-justify-content:center;
-align-items:center;
-gap:65px;
-position:relative;
-max-width:550px;
-margin:auto}
-.result-planets>.rocket{
-position:absolute;
-height:160px;
-left:calc(50% - 75px);
-top:-12px;
-width:150px;
-transform:rotate(15deg)}
-.result-planets>.planet-1{
-margin-top:80px}
-.result-assembly{
-position:static;
-transform:none;
-margin:-12px auto 18px}
-.result-stars{
-font-size:26px;
-font-weight:700;
-color:var(--teal)}
-.summary{
-text-align:left;
-margin:45px auto 0;
-max-width:620px;
-padding:20px;
-border:1px solid var(--line);
-border-radius:12px;
-font-size:12px}
-.summary summary{
-cursor:pointer;
-font-weight:650}
-.summary p{
-line-height:1.6;
-margin-top:15px}
-.summary table{
-width:100%;
-text-align:left;
-border-collapse:collapse}
-.summary th,.summary td{
-padding:10px 5px;
-border-bottom:1px solid var(--line)}
 .update-bar{
 text-align:center;
 padding:12px}
-.simple .hero-art,.simple .route,.simple .empty-station .rocket,.simple .result-planets,.simple .result-assembly{
+.simple .hero-art,.simple .route,.simple .empty-station .rocket{
 visibility:hidden}
 .reduce-motion *{
 scroll-behavior:auto}
@@ -941,14 +859,6 @@ gap:8px}
 width:100%;
 order:3;
 text-align:center}
-.results h1{
-font-size:40px}
-.result-planets{
-gap:30px}
-.result-planets>.rocket{
-height:120px}
-.summary{
-overflow-x:auto}
 .top-meta .status-dot{
 display:none}
 }

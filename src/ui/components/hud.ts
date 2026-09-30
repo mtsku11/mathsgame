@@ -3,7 +3,7 @@ import { destinations, planetSvg } from '../art/planets';
 import { starBadge, starPath } from '../art/stars';
 
 export interface HudState { destination: number }
-export interface Hud { el: HTMLElement; mount(parent: HTMLElement): void; update(state: HudState): void }
+export interface Hud { el: HTMLElement; stops: HTMLElement[]; mount(parent: HTMLElement): void; update(state: HudState): void }
 
 export function createHud(): Hud {
   const el = document.createElement('header');
@@ -13,7 +13,7 @@ export function createHud(): Hud {
 <button type="button" class="sp-pause" data-action="pause" aria-label="Pause game">${icons.pause(24)}</button>`;
   const stops = [...el.querySelectorAll<HTMLElement>('.sp-stop')];
   return {
-    el,
+    el, stops,
     mount(parent) { parent.append(el); },
     update({ destination }) {
       stops.forEach((stop, i) => {
