@@ -69,6 +69,18 @@ Use PLAN.md's provisional defaults for independent software work while the remai
 - [x] Authorise GitHub Pages at `https://mtsku11.github.io/mathsgame/` in public `mtsku11/mathsgame` (29 September 2026).
 - [x] Publish and verify the hosted browser suite and offline mission (21/21 at `https://mtsku11.github.io/mathsgame/`, 30 September 2026).
 
+## Redesign — Star Pilots (docs/REDESIGN-PLAN.md, branch `redesign`)
+
+- [ ] Phase 0 — Foundations (stage, router, events, motion, Pixi layer, fonts, settings v2, 1–4 players)
+- [ ] Phase 1 — Play screen static fidelity
+- [ ] Phase 2 — Game feel
+- [ ] Phase 3 — Boost rounds
+- [ ] Audio assets produced and checked (orchestrator)
+- [ ] Phase 4 — Sound, music and voice integration
+- [ ] Phase 5 — Front-of-house screens
+- [ ] Phase 6 — Spotlight mode, access and performance
+- [ ] Phase 7 — Delivery (owner approval before merge/deploy)
+
 ## Deferred
 
 - Extra maths types, themes, independent two-switch settings navigation, one-switch scanning, competition, and remote multiplayer.
