@@ -4,7 +4,7 @@ Planning date: 28 September 2026. Implementation authorised on the same date. St
 
 ## 1. Brief, recommendation, and open facts
 
-Build a fun multiplayer browser game for 3–4 pupils sharing one screen and one Microsoft Xbox Adaptive Controller during Maths Week in a special school. Each pupil has two physical inputs. Maths covers counting 1–5 and addition within 10. The teacher has approved starting implementation from this handoff.
+Build a fun multiplayer browser game for 1–4 players (originally 3–4 pupils) sharing one screen and one Microsoft Xbox Adaptive Controller during Maths Week in a special school. Each pupil has two physical inputs. Maths covers counting 1–5 and addition within 10. The teacher has approved starting implementation from this handoff.
 
 Recommended game: **Number Crew**, a cooperative space trip. Each pupil chooses between two large, stationary answers. A correct answer sends their cargo to the shared rocket; together the crew discovers three planets. Each pupil can work at a different maths level. Progress depends on completed turns, with teacher support available, and never on reaction speed.
 
@@ -14,10 +14,13 @@ The central tradeoff is shared-screen simplicity versus screen space: local mult
 
 - Runs in a browser.
 - Multiplayer, fun, and based on very simple maths.
-- Three or four pupils play together on one shared screen, using one shared Microsoft XAC.
+- One to four players play together on one shared screen, using one shared Microsoft XAC (owner update, 30 September 2026; previously three or four).
+- Players are aged 7–15 (owner decision, 30 September 2026). Tone is bright and cool, never babyish.
 - The classroom computer is a Windows PC; its Windows version and browser remain to be recorded.
-- Exactly two pupil inputs each: six switches for three pupils, eight for four.
+- Exactly two pupil inputs each: two switches for one player, up to eight for four.
 - Counting 1–5 and addition within 10.
+- A boost round follows every maths round (owner decision, 30 September 2026): pupils press their switches as fast as they can and pressing often and fast makes something spectacular happen. This reverses the no-rapid-tapping rule for the boost round only; maths questions stay untimed and no pupil can lose. Safeguards are in docs/REDESIGN-PLAN.md section 5.
+- Music, sound effects and narration are generated with the owner's ElevenLabs account and bundled locally; there is no runtime network dependency.
 - Intended for a teacher-led Maths Week activity in a special school.
 - The initial task was a build handoff; the teacher subsequently asked to begin the build.
 
@@ -25,16 +28,16 @@ The central tradeoff is shared-screen simplicity versus screen space: local mult
 
 | Decision | Build default | What still needs confirming |
 | --- | --- | --- |
-| Presentation | Simultaneous answers for the confirmed 3–4 pupils; enlarged turns also available | Which presentation suits the group best |
+| Presentation | Simultaneous answers for the confirmed 1–4 players; enlarged turns also available | Which presentation suits the group best |
 | Hardware connection | One shared XAC; compare the known-working SwitchJam Bluetooth setup first | Available switch models/count, cables, controller profile, exact working OS/browser |
 | Classroom platform | Confirmed Windows PC; target current Edge or Chrome | Windows version, actual browser, school restrictions, display resolution |
-| Audience | Age-neutral illustrated space theme | Ages, interests, useful visual/audio supports |
+| Audience | Ages 7–15 (known): bright, cool arcade-space theme (Star Pilots), plain words, no nursery styling | Interests and which visual/audio supports help individual pupils |
 | Maths allocation | Count 1–5 initially; teacher assigns Add within 5/10 per pupil | Which pupils use counting or addition, and whether numeral or quantity answer cards help |
 | Pace | Untimed, teacher advances between rounds | Whether optional automatic transitions suit the group |
 | Session | Six rounds, two per planet; roughly 5–10 minutes as a planning estimate | Fatigue, lesson length, and suitable break points |
 | Connectivity | Initial online load; cached offline play for subsequent launches | Whether the classroom can load the site and retain browser storage |
 
-The teacher confirmed the shared screen, single XAC, Windows PC, 3–4 pupils, and maths ranges during planning. Age range, Windows version, browser, and switch models remain unconfirmed. Update this table when further answers arrive. Missing hardware does not prevent software development, but prevents a hardware compatibility claim. Do not silently substitute two pupils or several controllers if the requested single-XAC setup fails its physical test.
+The teacher confirmed the shared screen, single XAC, Windows PC, 3–4 pupils, and maths ranges during planning; the owner later widened the group to 1–4 players and stated the age range (7–15). Windows version, browser, and switch models remain unconfirmed. Update this table when further answers arrive. Missing hardware does not prevent software development, but prevents a hardware compatibility claim. Do not silently substitute two pupils or several controllers if the requested single-XAC setup fails its physical test.
 
 ## 2. The play experience
 
