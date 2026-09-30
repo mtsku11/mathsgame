@@ -252,6 +252,8 @@ color:#4A2300;
 background:linear-gradient(180deg,#FFE58A 0%,var(--sp-gold) 55%,#FFB020 100%);
 box-shadow:0 0 0 4px #0C0830,0 0 0 6px #FFB020,0 6px 0 4px #0C0830,0 0 30px rgba(255,210,63,.45);
 cursor:pointer}
+.sp-next svg{
+flex:none}
 .sp-next:hover:not(:disabled){
 background:linear-gradient(180deg,#FFF0B0 0%,#FFDD5E 55%,#FFBE3D 100%);
 color:#4A2300;
