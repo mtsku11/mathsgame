@@ -1,6 +1,6 @@
 # Number Crew — implementation handoff
 
-Planning date: 28 September 2026. Implementation authorised on the same date. Status: Phase 1 playable-slice and Phase 2 full-mission software gates are verified using the implemented three/four-pupil layouts. The public GitHub Pages deployment and all 21 hosted Chromium scenarios pass, including offline play, mission progress, one stable live region, visibility recovery, and unrelated-controller handling; manual access acceptance and physical hardware testing are incomplete. TODO.md and docs/HARDWARE-TEST.md record evidence and remaining checks.
+Planning date: 28 September 2026. Implementation authorised on the same date. Redesign note (30 September 2026): on branch `redesign`, docs/REDESIGN-PLAN.md supersedes this plan's presentation — Star Pilots saucers and a mothership replace the cargo pods and shared rocket, crew check-in replaces the practice screen, and boost rounds, generated audio and Spotlight turns are added. Requirements, input rules and acceptance criteria below still apply unless REDESIGN-PLAN.md records a change. Status: Phase 1 playable-slice and Phase 2 full-mission software gates are verified using the implemented three/four-pupil layouts. The public GitHub Pages deployment and all 21 hosted Chromium scenarios pass, including offline play, mission progress, one stable live region, visibility recovery, and unrelated-controller handling; manual access acceptance and physical hardware testing are incomplete. TODO.md and docs/HARDWARE-TEST.md record evidence and remaining checks.
 
 ## 1. Brief, recommendation, and open facts
 
@@ -47,7 +47,7 @@ Three or four pupil panels sit below the shared rocket. One shows three large ob
 
 ### Session loop
 
-1. Teacher selects three or four pupils, presentation mode, maths preset per pupil, and sensory settings.
+1. Teacher selects one to four pupils, presentation mode, maths preset per pupil, and sensory settings.
 2. Teacher maps and checks the two switches for every pupil.
 3. A practice screen lets each switch light its matching answer card, without assessment.
 4. Teacher starts a six-round journey. Each round gives each active pupil one question at their assigned level.
@@ -82,7 +82,7 @@ Three or four pupil panels sit below the shared rocket. One shows three large ob
 
 | Area | Deliverable |
 | --- | --- |
-| Participation | Three or four local pupils sharing one XAC, each with two mapped switches; keyboard and touch alternatives |
+| Participation | One to four local pupils sharing one XAC, each with two mapped switches; keyboard and touch alternatives |
 | Controller access | Binding wizard, visible switch tester, reconnect recovery, configurable per-pupil input cooldown |
 | Game | One polished six-round cooperative mission with three visual destinations |
 | Maths | Counting 1–5 and addition within 5/10; per-pupil selection |
@@ -268,7 +268,7 @@ GitHub Pages hosting was authorised on 29 September 2026: public repository `mts
 | 3 — Classroom access | 3/4-pupil layouts, enlarged turns, reconnect recovery, quiet/reduced-motion settings | Browser scenarios and physical readability/input checks pass for each advertised configuration. |
 | 4 — Delivery rehearsal | Production caching, teacher guide, test records, actual lesson-length rehearsal | Offline reload works where promised; teacher runs setup, play, pause/reconnect and replay using the delivered instructions. |
 
-If a deadline forces cuts, defer optional automatic transitions and decorative variety first. Preserve the confirmed 3–4 pupils on one XAC, counting 1–5, and addition within 10. Do not remove input calibration, pause/recovery, untimed questions, readable choices, or truthful hardware verification. Record any reduced scope explicitly in TODO.md and the handoff.
+If a deadline forces cuts, defer optional automatic transitions and decorative variety first. Preserve the confirmed 1–4 pupils on one XAC, counting 1–5, and addition within 10. Do not remove input calibration, pause/recovery, untimed questions, readable choices, or truthful hardware verification. Record any reduced scope explicitly in TODO.md and the handoff.
 
 ## 9. Automated and browser verification
 
@@ -285,7 +285,7 @@ Test behaviours that are costly to discover during the lesson. Do not generate s
 
 ### Playwright scenarios
 
-- Teacher creates three- and four-pupil setups, completes practice, runs six rounds via keyboard, observes the finale, and replays.
+- Teacher creates one- to four-pupil setups, completes practice (crew check-in in the redesign), runs six rounds via keyboard, observes the finale, and replays.
 - Use an injected input provider to simulate gamepad snapshots: three pupils share one device; four share one device; disconnect/reconnect requires revalidation; a held switch does not trigger the next question. Clearly label these as simulated.
 - Exercise the whole flow through native on-screen buttons as well as mapped keyboard input. Inspect console errors, focus, visible status, and unexpected page scrolling.
 - Verify the 3- and 4-pupil views and enlarged mode at 1280×720 and 1920×1080; inspect 200% zoom and a narrow teacher-setup viewport. Capture screenshots for review.
