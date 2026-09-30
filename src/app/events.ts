@@ -25,8 +25,12 @@ export interface GameEvents {
   homeReached: void;
   starLanded: void;
   switchChecked: { player: number; side: Side };
+  // Both of a pilot's switches have been pressed and released on the check-in screen.
+  crewReady: { player: number };
+  // The teacher started the mission from check-in.
+  crewStart: void;
   sayQuestion: { player: number; question: Question };
-  screen: { name: 'title' | 'legacy' | 'play' | 'finale' };
+  screen: { name: 'title' | 'setup' | 'switches' | 'checkin' | 'play' | 'finale' };
   gamePaused: void;
   gameResumed: void;
   uiClick: void;

@@ -2,7 +2,7 @@ import type { MusicId, SfxId } from './manifest';
 
 // Everything here decides what may play and how loud; nothing touches Howler, the DOM or a clock.
 export interface AudioSettings { quiet: boolean; effectsVolume: number; musicVolume: number; voiceVolume: number; narration: boolean; lowStim: boolean }
-export type ScreenName = 'title' | 'legacy' | 'play' | 'finale';
+export type ScreenName = 'title' | 'setup' | 'switches' | 'checkin' | 'play' | 'finale';
 export type BoostMusic = 'off' | 'live' | 'faded';
 
 export const DUCK_LEVEL = 0.33;
@@ -31,7 +31,7 @@ export const voiceGain = (s: AudioSettings, requested = false): number => voiceA
 export function wantedMusic(screen: ScreenName | null, boost: BoostMusic): MusicId | null {
   if (boost === 'live') return 'boost';
   if (boost === 'faded') return null;
-  return screen === 'title' || screen === 'legacy' ? 'title' : screen === 'play' ? 'mission' : null;
+  return screen === 'play' ? 'mission' : screen === 'finale' || screen === null ? null : 'title';
 }
 
 const PENTATONIC = [0, 2, 4, 7, 9, 12] as const;

@@ -463,8 +463,8 @@ test('ending the journey in the middle of a boost returns to setup, and the next
   expect(await boostFlow(page)).toBe('idle');
   expect(await boostState(page)).toBeNull();
   await page.getByLabel('Keyboard & on-screen buttons').check();
-  await page.getByRole('button', { name: 'Enter practice' }).click();
-  await page.getByRole('button', { name: 'Launch the journey' }).click();
+  await page.getByRole('button', { name: 'Start crew check-in' }).click();
+  await page.getByRole('button', { name: 'Start anyway' }).click();
   await expect(page.locator('.sp-st')).toHaveCount(2);
   await passAll(page, 2);
   await page.getByRole('button', { name: 'Boost round!' }).click();

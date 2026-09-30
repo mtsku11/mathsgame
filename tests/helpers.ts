@@ -1,7 +1,7 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
 export async function enterSetup(page: Page): Promise<void> {
-  const teacher = page.getByRole('button', { name: 'Teacher setup', exact: true });
+  const teacher = page.getByRole('button', { name: 'Start', exact: true });
   const setup = page.getByLabel('Crew size');
   await expect(teacher.or(setup)).toBeVisible();
   if (await teacher.isVisible()) await teacher.click();
@@ -43,9 +43,9 @@ export async function startGame(page: Page, { count = 4, enlarged = false, url =
     await page.getByLabel('Celebration delay').selectOption(String(autoAdvance));
   }
   await page.getByLabel('Keyboard & on-screen buttons').check();
-  await page.getByRole('button', { name: 'Enter practice' }).click();
+  await page.getByRole('button', { name: 'Start crew check-in' }).click();
   await beforeLaunch?.(page);
-  await page.getByRole('button', { name: 'Launch the journey' }).click();
+  await page.getByRole('button', { name: 'Start anyway' }).click();
   await expect(page.locator('.sp-st').first()).toBeVisible();
   await page.waitForTimeout(150);
 }
@@ -174,7 +174,7 @@ export async function installXac(page: Page): Promise<void> {
 export const setButtons = (page: Page, buttons: number[]): Promise<void> => page.evaluate(detail => { window.dispatchEvent(new CustomEvent('mock-buttons', { detail })); }, buttons);
 export const setConnected = (page: Page, connected: boolean): Promise<void> => page.evaluate(detail => { window.dispatchEvent(new CustomEvent('mock-connection', { detail })); }, connected);
 
-// On the switch-setup screen: learn every switch, then check each one in practice.
+// On the switch-setup screen: learn every switch, then check each one at crew check-in.
 export async function mapAndCheck(page: Page, count: number): Promise<void> {
   const tap = async (buttons: number[]): Promise<void> => { await setButtons(page, buttons); await page.waitForTimeout(150); };
   for (let i = 0; i < count * 2; i++) {
@@ -183,7 +183,7 @@ export async function mapAndCheck(page: Page, count: number): Promise<void> {
     await tap([i]); await tap([]);
     await expect(page.locator('.map-button').nth(i)).toContainText('checked');
   }
-  await page.getByRole('button', { name: 'Check switches in practice' }).click();
+  await page.getByRole('button', { name: 'Start crew check-in' }).click();
   await page.waitForTimeout(600);
   await tap(Array.from({ length: count }, (_, i) => i * 2)); await tap([]); await page.waitForTimeout(600);
   await tap(Array.from({ length: count }, (_, i) => i * 2 + 1)); await tap([]);
@@ -197,7 +197,7 @@ export async function startController(page: Page, { count = 4, boost = false }: 
   await setBoost(page, boost);
   await page.getByRole('button', { name: 'Set up the switches' }).click();
   await mapAndCheck(page, count);
-  await page.getByRole('button', { name: 'Launch the journey' }).click();
+  await page.getByRole('button', { name: 'Start mission' }).click();
   await expect(page.locator('.sp-st').first()).toBeVisible();
   await page.waitForTimeout(300);
 }

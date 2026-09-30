@@ -12,7 +12,7 @@ async function mapAndCheck(page: Page, count: number) {
     await press(page, [i]); await press(page, []);
     await expect(page.locator('.map-button').nth(i)).toContainText('checked');
   }
-  await page.getByRole('button', { name: 'Check switches in practice' }).click();
+  await page.getByRole('button', { name: 'Start crew check-in' }).click();
   await page.waitForTimeout(600);
   await press(page, Array.from({ length: count }, (_, i) => i * 2));
   await press(page, []); await page.waitForTimeout(600);
@@ -52,7 +52,7 @@ for (const count of [1, 2, 3, 4]) {
     await expect(page.locator('#diagnostic-text')).toContainText('8 buttons · 2 axes');
     await expect(page.locator('#diagnostic-text')).toContainText('1: 1.00');
     await mapAndCheck(page, count);
-    await page.getByRole('button', { name: 'Launch the journey' }).click();
+    await page.getByRole('button', { name: 'Start mission' }).click();
     await page.waitForTimeout(600);
     const first = station(page, 0);
     await press(page, [await correctSide(first)]); await press(page, []);
@@ -68,7 +68,7 @@ for (const count of [1, 2, 3, 4]) {
     await page.getByRole('button', { name: 'Reconnect & check switches' }).click();
     await expect(page.locator('#diagnostic-text')).toContainText('Slot 0: no longer reported');
     await expect(page.locator('#diagnostic-text')).toContainText('Slot 2: detected');
-    await expect(page.getByRole('button', { name: 'Check switches in practice' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Start crew check-in' })).toBeDisabled();
     await mapAndCheck(page, count);
     await page.getByRole('button', { name: 'Resume journey' }).click();
     await expect(page.locator('.sp-st')).toHaveCount(count);

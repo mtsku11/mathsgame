@@ -74,7 +74,7 @@ describe('ducking and boost music', () => {
   });
   it('chooses the music from the screen and the boost state', () => {
     expect(wantedMusic('title', 'off')).toBe('title');
-    expect(wantedMusic('legacy', 'off')).toBe('title');
+    for (const name of ['setup', 'switches', 'checkin'] as const) expect(wantedMusic(name, 'off')).toBe('title');
     expect(wantedMusic('play', 'off')).toBe('mission');
     expect(wantedMusic('play', 'live')).toBe('boost');
     expect(wantedMusic('play', 'faded')).toBeNull();

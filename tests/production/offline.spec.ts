@@ -49,8 +49,8 @@ test('production reloads offline, completes a mission, and defers updates until 
   await page.getByLabel('Crew size').selectOption('4');
   await setBoost(page, false);
   await page.getByLabel('Keyboard & on-screen buttons').check();
-  await page.getByRole('button', { name: 'Enter practice' }).click();
-  await page.getByRole('button', { name: 'Launch the journey' }).click();
+  await page.getByRole('button', { name: 'Start crew check-in' }).click();
+  await page.getByRole('button', { name: 'Start anyway' }).click();
   await page.waitForTimeout(150);
   for (let round = 1; round <= 6; round++) {
     for (let pupil = 0; pupil < 4; pupil++) {
@@ -63,14 +63,14 @@ test('production reloads offline, completes a mission, and defers updates until 
   // Real Web Audio, offline: every sprite and track decoded from the cache, and the mission was voiced, scored and finished with the jingle.
   await expect.poll(() => page.evaluate(() => (window as any).__NC_AUDIO__.state().loaded.music.length)).toBe(5);
   expect(await page.evaluate(() => (window as any).__NC_AUDIO__.state())).toMatchObject({ backend: 'howler', unlocked: true, ready: true, loaded: { sfx: true, voice: true } });
-  const wanted = ['music:title', 'music:mission', 'voice:round_1', 'sfx:correct', 'music:jingle_round', 'music:jingle_mission', 'voice:mission_complete'];
+  const wanted = ['music:title', 'music:mission', 'voice:lets_go', 'sfx:correct', 'music:jingle_round', 'music:jingle_mission', 'voice:mission_complete'];
   await expect.poll(() => page.evaluate(names => {
     const played = (window as any).__NC_AUDIO__.log.filter((entry: { action: string }) => entry.action === 'play').map((entry: { channel: string; id: string }) => `${entry.channel}:${entry.id}`);
     return names.filter(name => !played.includes(name));
   }, wanted), { timeout: 10000 }).toEqual([]);
   await context.setOffline(false);
   await page.getByRole('button', { name: 'Another adventure' }).click();
-  await page.getByRole('button', { name: 'Launch the journey' }).click();
+  await page.getByRole('button', { name: 'Start anyway' }).click();
   await page.waitForTimeout(150);
   updated = true;
   await page.evaluate(async () => { await (await navigator.serviceWorker.getRegistration())!.update(); });
@@ -107,8 +107,8 @@ test('production plays a Warp Drive boost round offline, including the lazily lo
   await page.getByLabel('Crew size').selectOption('4');
   await setBoost(page, { autoStart: false, seconds: 20, difficulty: 'easy' });
   await page.getByLabel('Keyboard & on-screen buttons').check();
-  await page.getByRole('button', { name: 'Enter practice' }).click();
-  await page.getByRole('button', { name: 'Launch the journey' }).click();
+  await page.getByRole('button', { name: 'Start crew check-in' }).click();
+  await page.getByRole('button', { name: 'Start anyway' }).click();
   await passAll(page, 4);
   await page.getByRole('button', { name: 'Boost round!' }).click();
   await page.keyboard.press('Escape');
@@ -142,8 +142,8 @@ test('production plays a Firework Frenzy and a Bubble Blast boost offline, with 
   await page.getByLabel('Crew size').selectOption('2');
   await setBoost(page, { autoStart: false, seconds: 12, difficulty: 'easy' });
   await page.getByLabel('Keyboard & on-screen buttons').check();
-  await page.getByRole('button', { name: 'Enter practice' }).click();
-  await page.getByRole('button', { name: 'Launch the journey' }).click();
+  await page.getByRole('button', { name: 'Start crew check-in' }).click();
+  await page.getByRole('button', { name: 'Start anyway' }).click();
   await expect(page.locator('.fx-canvas')).toHaveCount(1);
   const play = async (scene: string): Promise<void> => {
     await passAll(page, 2);

@@ -151,14 +151,14 @@ test('picture answers stay inside their buttons at 720p', async ({ page }) => {
 });
 
 for (const count of [1, 2, 3, 4]) {
-  test(`practice with ${count} pupils fits a 720p window with large targets`, async ({ page }) => {
+  test(`check-in with ${count} pupils fits a 720p window with large targets`, async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
     await openSetup(page);
     await page.getByLabel('Crew size').selectOption(String(count));
     await page.getByLabel('Keyboard & on-screen buttons').check();
-    await page.getByRole('button', { name: 'Enter practice' }).click();
+    await page.getByRole('button', { name: 'Start crew check-in' }).click();
     expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight && document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    const targets = await page.locator('.answer').evaluateAll(elements => elements.map(element => {
+    const targets = await page.locator('.ck-cap').evaluateAll(elements => elements.map(element => {
       const box = element.getBoundingClientRect(); return box.width >= 96 && box.height >= 96;
     }));
     expect(targets.every(Boolean)).toBe(true);

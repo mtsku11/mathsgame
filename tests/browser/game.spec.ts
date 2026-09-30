@@ -201,8 +201,8 @@ for (const count of [3, 4]) {
     }
     await expect(page.locator('.sp-fin-stars')).toContainText(`${6 * count} crew stars collected`);
     await page.getByRole('button', { name: 'Another adventure' }).click();
-    await expect(page.getByRole('button', { name: 'Launch the journey' })).toBeVisible();
-    await page.getByRole('button', { name: 'Launch the journey' }).click();
+    await expect(page.getByRole('button', { name: 'Start anyway' })).toBeVisible();
+    await page.getByRole('button', { name: 'Start anyway' }).click();
     await expect(crewStars(page)).toHaveText('0');
     await expect(journey(page).getByText('Round 1 of 6', { exact: false })).toBeVisible();
   });

@@ -4,7 +4,7 @@ import type { Screen } from '../../app/router';
 import type { Quality } from '../../settings';
 import { icons } from '../art/icons';
 import { mothership } from '../art/mothership';
-import { pilot } from '../art/pilot';
+import { pilot, pilotColors } from '../art/pilot';
 import { destinations, planetSvg } from '../art/planets';
 import { pipSvg, skyStars, starPath } from '../art/stars';
 import { idle, isCalm, timeline } from '../fx/motion';
@@ -12,7 +12,8 @@ import { burst, confetti, crewColours, detachParticles, attachParticles, rain } 
 import { destroyFx, initFx, particleResolution, resolveQuality } from '../fx/pixi';
 import { createStage, type Stage } from '../stage';
 
-export interface SummaryRow { player: number; first: number; retry: number; supported: number; passed: number }
+// Session-only counts per pilot. No ranking, no timing and no boost presses.
+export interface SummaryRow { player: number; correct: number; tries: number; help: number; passed: number }
 export interface FinaleState { players: number; stars: number; rows: SummaryRow[]; offline: string; canUpdate: boolean }
 export interface FinaleScreen extends Screen { update(state: FinaleState): void }
 
@@ -32,7 +33,7 @@ export function createFinaleScreen(source: () => FinaleState, options: { quality
   const view = (): HTMLElement => root!;
 
   function summary(rows: SummaryRow[]): string {
-    return `<p>Two choices include a chance element. This is observation, not an attainment score.</p><table><thead><tr><th>Station</th><th>First try</th><th>Retry</th><th>Supported</th><th>Passed</th></tr></thead><tbody>${rows.map(row => `<tr><th>Player ${row.player}</th><td>${row.first}</td><td>${row.retry}</td><td>${row.supported}</td><td>${row.passed}</td></tr>`).join('')}</tbody></table><p>Results disappear when you start again. No pupil data is saved.</p>`;
+    return `<p>Two choices include a chance element. This is observation, not an attainment score. Tries are answers that were not right yet; help means the count-together helper was used.</p><table><thead><tr><th scope="col">Pilot</th><th scope="col">Correct</th><th scope="col">Tries</th><th scope="col">Help</th><th scope="col">Passed</th></tr></thead><tbody>${rows.map(row => `<tr><th scope="row">Player ${row.player}<span class="sp-fin-colour"> · ${pilotColors[row.player - 1].name}</span></th><td>${row.correct}</td><td>${row.tries}</td><td>${row.help}</td><td>${row.passed}</td></tr>`).join('')}</tbody></table><p>Results disappear when you start again. No pupil data is saved.</p>`;
   }
 
   function markup(state: FinaleState): string {
@@ -47,7 +48,7 @@ export function createFinaleScreen(source: () => FinaleState, options: { quality
 <div class="sp-fin-ship" role="img" aria-label="Crew stars: ${state.stars}">${mothership(300)}</div>
 <div class="sp-fin-pips" aria-hidden="true">${Array.from({ length: 6 }, () => `<i class="sp-pip is-done">${pipSvg()}</i>`).join('')}</div>
 ${pilots}
-<div class="sp-fin-actions"><button type="button" class="sp-fin-primary" data-action="replay">Another adventure ${icons.arrow(24)}</button><button type="button" class="sp-fin-secondary" data-action="setup">Teacher setup</button></div>
+<div class="sp-fin-actions"><button type="button" class="sp-fin-primary" data-action="replay">Another adventure ${icons.arrow(24)}</button><button type="button" class="sp-fin-secondary" data-action="setup">New session</button></div>
 <details class="sp-fin-summary"><summary>Teacher observation · this session only</summary><div class="sp-fin-summary-body">${summary(state.rows)}</div></details>
 </main>`;
   }

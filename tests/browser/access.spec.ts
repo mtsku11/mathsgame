@@ -16,11 +16,11 @@ test('anonymous comfort and input preferences survive reload while a new session
   await page.getByLabel('Advance completed rounds automatically').check();
   await page.getByLabel('Celebration delay').selectOption('7');
   await page.getByLabel('Keyboard & on-screen buttons').check();
-  await page.getByRole('button', { name: 'Enter practice' }).click();
-  await expect(page.locator('body')).toHaveClass(/reduce-motion/);
+  await page.getByRole('button', { name: 'Start crew check-in' }).click();
+  await expect(page.locator('html')).toHaveClass(/nc-reduced/);
   await expect(page.locator('body')).toHaveClass(/simple/);
-  expect(await page.locator('.answer').first().evaluate(element => getComputedStyle(element).transitionDuration)).toBe('0s');
-  expect(await page.locator('.route').evaluate(element => getComputedStyle(element).visibility)).toBe('hidden');
+  expect(await page.locator('.ck-cap').first().evaluate(element => getComputedStyle(element).transitionDuration)).toBe('0s');
+  expect(await page.locator('.sp-deco').first().evaluate(element => getComputedStyle(element).visibility)).toBe('hidden');
   await page.reload();
   await enterSetup(page);
   await page.getByText('Comfort & access settings', { exact: true }).click();
@@ -36,7 +36,7 @@ test('anonymous comfort and input preferences survive reload while a new session
   expect(Object.keys(saved).sort()).toEqual(['autoAdvance', 'boost', 'count', 'effectsVolume', 'enlarged', 'lowStim', 'musicVolume', 'narration', 'players', 'quality', 'quiet', 'reduced', 'simple', 'transitionSeconds', 'voiceVolume']);
   expect(Object.keys(saved.players[0]).sort()).toEqual(['boostPower', 'cooldown', 'keys', 'preset', 'quantities']);
   await page.getByRole('button', { name: 'Set up the switches' }).click();
-  await expect(page.getByRole('button', { name: 'Check switches in practice' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Start crew check-in' })).toBeDisabled();
   await page.evaluate(() => {
     const legacy = JSON.parse(localStorage.getItem('number-crew-settings-v2')!);
     delete legacy.effectsVolume;
@@ -140,8 +140,8 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 640, height: 360 }
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.getByLabel('Screen layout').selectOption('enlarged');
     await page.getByLabel('Keyboard & on-screen buttons').check();
-    await page.getByRole('button', { name: 'Enter practice' }).click();
-    await page.getByRole('button', { name: 'Launch the journey' }).click();
+    await page.getByRole('button', { name: 'Start crew check-in' }).click();
+    await page.getByRole('button', { name: 'Start anyway' }).click();
     await page.getByRole('button', { name: 'Pause game' }).click();
     const resume = page.getByRole('button', { name: 'Resume journey', exact: true });
     await resume.focus();

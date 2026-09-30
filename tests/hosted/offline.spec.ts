@@ -14,8 +14,8 @@ test('published game reloads offline and completes all six rounds', async ({ pag
   expect(await page.evaluate(() => navigator.onLine)).toBe(false);
   await page.getByLabel('Crew size').selectOption('4');
   await page.getByLabel('Keyboard & on-screen buttons').check();
-  await page.getByRole('button', { name: 'Enter practice' }).click();
-  await page.getByRole('button', { name: 'Launch the journey' }).click();
+  await page.getByRole('button', { name: 'Start crew check-in' }).click();
+  await page.getByRole('button', { name: 'Start anyway' }).click();
   await page.waitForTimeout(150);
   for (let round = 1; round <= 6; round++) {
     for (let pupil = 0; pupil < 4; pupil++) {

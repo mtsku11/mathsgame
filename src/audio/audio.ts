@@ -229,9 +229,12 @@ export function createAudio(settings: AudioSettings, backend: Backend = silentRe
     stopEverything(name === 'finale');
     screen = name;
     reconcile();
+    if (name === 'checkin') say('crew_check', 'replace', { tag: 'checkin' });
   });
   events.on('uiClick', () => playSfx('click'));
   events.on('switchChecked', () => playSfx('boop'));
+  events.on('crewReady', () => { playSfx('wake'); say('ready', 'replace', { tag: 'checkin' }); });
+  events.on('crewStart', () => say('lets_go', 'queue', { tag: 'go', expiresMs: 3000 }));
   events.on('roundStart', ({ round }) => {
     cancelTimers('praise');
     queue.flushTag('round');

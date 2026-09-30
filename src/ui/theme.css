@@ -102,26 +102,37 @@ font-size:34px;
 font-weight:700;
 line-height:1.1;
 color:var(--sp-lilac)}
-.sp-crew{
+.sp-tship{
+position:absolute;
+left:490px;
+top:232px;
+width:300px;
+height:300px;
+z-index:2}
+.sp-tship svg{
+display:block}
+.sp-tpilot{
+position:absolute;
+width:200px;
+height:178px;
+z-index:1}
+.sp-tpilot .pilot{
+display:block;
+filter:drop-shadow(0 0 22px rgba(196,186,255,.28))}
+.sp-hint{
 position:absolute;
 left:0;
 right:0;
-top:318px;
-display:flex;
-justify-content:center;
-gap:22px}
-.sp-pilot{
-width:220px;
-height:195px}
-.sp-pilot:nth-child(even){
-margin-top:26px}
-.sp-pilot .pilot{
-display:block;
-filter:drop-shadow(0 0 22px rgba(196,186,255,.28))}
+bottom:16px;
+margin:0;
+text-align:center;
+font-size:22px;
+font-weight:700;
+color:var(--sp-lilac)}
 .sp-cta{
 position:absolute;
 left:50%;
-bottom:44px;
+bottom:62px;
 margin-left:-170px;
 width:340px;
 min-height:76px;
@@ -146,3 +157,11 @@ box-shadow:0 0 0 5px #0C0830,0 0 0 8px #FFB020,0 3px 0 5px #0C0830,0 0 36px rgba
 .sp-cta:focus-visible{
 outline:5px solid #fff;
 outline-offset:10px}
+
+@keyframes sp-cta-glow{
+0%,100%{filter:brightness(1)}
+50%{filter:brightness(1.12)}}
+.sp-cta{
+animation:sp-cta-glow 2.4s ease-in-out infinite}
+:is(.nc-reduced,.nc-lowstim,.nc-instant) .sp-cta{
+animation:none}

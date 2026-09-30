@@ -17,7 +17,7 @@ const pixelAt = async (page: Page, x: number, y: number) => pixel(await page.scr
 const ready = (page: Page) => page.evaluate(() => document.fonts.ready.then(() => true));
 const hasWebGL = (page: Page) => page.evaluate(() => !!document.createElement('canvas').getContext('webgl2'));
 
-test('title is the first screen with one Teacher setup button and no console errors', async ({ page }) => {
+test('title is the first screen with one Start button and no console errors', async ({ page }) => {
   const errors: string[] = [], external: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
@@ -26,8 +26,8 @@ test('title is the first screen with one Teacher setup button and no console err
   await ready(page);
   await expect(page.getByRole('heading', { name: 'Number Crew', level: 1 })).toBeVisible();
   await expect(page.getByText('Star Pilots', { exact: true })).toBeVisible();
-  await expect(page.locator('.sp-pilot')).toHaveCount(4);
-  const button = page.getByRole('button', { name: 'Teacher setup', exact: true });
+  await expect(page.locator('.sp-tpilot')).toHaveCount(4);
+  const button = page.getByRole('button', { name: 'Start', exact: true });
   await expect(page.getByRole('button')).toHaveCount(1);
   await expect(button).toBeFocused();
   await expect(page.getByLabel('Crew size')).toHaveCount(0);
@@ -58,7 +58,7 @@ for (const { width, height } of sizes) {
     expect(Math.abs(box.x - (width - box.width) / 2)).toBeLessThanOrEqual(1);
     expect(Math.abs(box.y - (height - box.height) / 2)).toBeLessThanOrEqual(1);
     expect(await page.locator('.stage').evaluate(element => new DOMMatrix(getComputedStyle(element).transform).a)).toBeCloseTo(scale, 4);
-    const button = (await page.getByRole('button', { name: 'Teacher setup' }).boundingBox())!;
+    const button = (await page.getByRole('button', { name: 'Start' }).boundingBox())!;
     expect(button.x).toBeGreaterThanOrEqual(box.x);
     expect(button.y + button.height).toBeLessThanOrEqual(box.y + box.height);
     mkdirSync(shots, { recursive: true });
@@ -79,7 +79,7 @@ test('stage letterboxes on the deep-space background and recomputes on resize', 
 });
 
 test('idle bob runs by default, and stops in reduced motion and instant mode', async ({ page }) => {
-  const transform = (p: Page) => p.locator('.sp-pilot').evaluateAll(elements => elements.map(element => getComputedStyle(element).transform));
+  const transform = (p: Page) => p.locator('.sp-tpilot').evaluateAll(elements => elements.map(element => getComputedStyle(element).transform));
   await page.goto('./');
   await expect.poll(async () => (await transform(page)).some(value => value !== 'none')).toBe(true);
   await page.goto('./?instant');
@@ -129,7 +129,7 @@ test('missing WebGL is logged once and the title still works', async ({ page }) 
   });
   await page.goto('./?instant&fx');
   await page.waitForTimeout(800);
-  await expect(page.getByRole('button', { name: 'Teacher setup' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Start' })).toBeVisible();
   await expect(page.locator('.fx-canvas')).toHaveCount(0);
   expect(warnings.filter(text => text.includes('Effects layer unavailable'))).toHaveLength(1);
   expect(errors).toEqual([]);

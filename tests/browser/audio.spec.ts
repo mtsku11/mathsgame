@@ -45,7 +45,7 @@ test.describe.configure({ mode: 'parallel' });
 test('nothing is requested to play before the teacher first clicks, and pupil letter keys never unlock audio', async ({ page }) => {
   const errors = errorsOf(page);
   await page.goto(silent);
-  await expect(page.getByRole('button', { name: 'Teacher setup', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeVisible();
   await page.waitForTimeout(400);
   expect(await audioLog(page)).toEqual([]);
   await page.keyboard.press('f');
@@ -53,7 +53,7 @@ test('nothing is requested to play before the teacher first clicks, and pupil le
   await page.waitForTimeout(200);
   expect(await audioLog(page)).toEqual([]);
   expect(await audioState(page)).toMatchObject({ unlocked: false, music: { id: null } });
-  await page.getByRole('button', { name: 'Teacher setup', exact: true }).click();
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
   await expect.poll(async () => (await audioState(page)).music.id).toBe('title');
   const log = await audioLog(page);
   expect(log.find(entry => entry.channel === 'music')).toMatchObject({ id: 'title', action: 'play' });
@@ -185,13 +185,14 @@ test('help numbers are not left hidden when the game is paused mid-count', async
 
 test('a new round flushes queued round lines, so no stale "All stars collected" or round number is heard', async ({ page }) => {
   await startGame(page, { count: 1, url: silent });
-  expect((await audioState(page)).voice.current).toBe('round_1');
+  expect((await audioState(page)).voice).toMatchObject({ current: 'lets_go', queued: ['round_1'] });
+  await expect.poll(async () => (await audioState(page)).voice.current).toBe('round_1');
   await passAll(page, 1);
   await expect.poll(async () => (await audioState(page)).voice.queued).toEqual(['all_stars']);
   await nextButton(page).click();
   await expect.poll(async () => (await audioState(page)).voice.queued).toEqual(['round_2']);
   await waitVoiceIdle(page);
-  expect(plays(await audioLog(page), 'voice')).toEqual(['round_1', 'round_2']);
+  expect(plays(await audioLog(page), 'voice')).toEqual(['crew_check', 'lets_go', 'round_1', 'round_2']);
 });
 
 test('low stimulation plays only acknowledgements: no music, stingers, cheers or praise', async ({ page }) => {
@@ -223,8 +224,8 @@ test('narration off silences the voice but effects and music still play', async 
   await page.getByLabel('Crew size').selectOption('2');
   await page.getByLabel('Boost round after every maths round').uncheck();
   await page.getByLabel('Keyboard & on-screen buttons').check();
-  await page.getByRole('button', { name: 'Enter practice' }).click();
-  await page.getByRole('button', { name: 'Launch the journey' }).click();
+  await page.getByRole('button', { name: 'Start crew check-in' }).click();
+  await page.getByRole('button', { name: 'Start anyway' }).click();
   await expect(page.locator('.sp-st').first()).toBeVisible();
   await answerCorrectly(page, 0);
   await page.getByRole('button', { name: 'Say Pink\'s question' }).click();
@@ -459,12 +460,12 @@ test('teacher volume controls: music, effects and voice volumes and narration wo
 });
 
 async function enterAndLaunch(page: Page): Promise<void> {
-  const teacher = page.getByRole('button', { name: 'Teacher setup', exact: true });
+  const teacher = page.getByRole('button', { name: 'Start', exact: true });
   await teacher.click();
   await page.getByLabel('Boost round after every maths round').uncheck();
   await page.getByLabel('Keyboard & on-screen buttons').check();
-  await page.getByRole('button', { name: 'Enter practice' }).click();
-  await page.getByRole('button', { name: 'Launch the journey' }).click();
+  await page.getByRole('button', { name: 'Start crew check-in' }).click();
+  await page.getByRole('button', { name: 'Start anyway' }).click();
   await expect(page.locator('.sp-st').first()).toBeVisible();
 }
 
@@ -486,7 +487,7 @@ test('real audio: sprites and music decode, the context runs, and the title trac
   await page.goto('./');
   await expect.poll(async () => (await audioState(page)).unlocked).toBe(false);
   expect(await audioLog(page)).toEqual([]);
-  await page.getByRole('button', { name: 'Teacher setup', exact: true }).click();
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
   await expect.poll(async () => (await audioState(page)).ready, { timeout: 15000 }).toBe(true);
   await expect.poll(async () => (await audioState(page)).loaded, { timeout: 20000 }).toMatchObject({ sfx: true, voice: true });
   await expect.poll(async () => (await audioState(page)).loaded.music.length, { timeout: 20000 }).toBe(5);

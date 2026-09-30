@@ -317,7 +317,7 @@ test('finale: teacher observation is collapsed by default, buttons replay and re
   await details.locator('summary').click();
   await expect(details.locator('table')).toBeVisible();
   expect(await details.locator('tbody tr').evaluateAll(rows => rows.map(row => [...row.children].map(cell => cell.textContent)))).toEqual([
-    ['Player 1', '1', '0', '0', '5'], ['Player 2', '0', '0', '0', '6']]);
+    ['Player 1 · Pink pilot', '1', '0', '0', '5'], ['Player 2 · Blue pilot', '0', '0', '0', '6']]);
   await expect(details).toContainText('This is observation, not an attainment score.');
   await expect(details).toContainText('No pupil data is saved.');
   expect(await page.getByText(/rank|winner|best|fastest/i).count()).toBe(0);
@@ -325,13 +325,13 @@ test('finale: teacher observation is collapsed by default, buttons replay and re
   expect(box!.x + box!.width).toBeLessThanOrEqual(1280);
 
   await page.getByRole('button', { name: 'Another adventure' }).click();
-  await expect(page.getByRole('button', { name: 'Launch the journey' })).toBeVisible();
-  await page.getByRole('button', { name: 'Launch the journey' }).click();
+  await expect(page.getByRole('button', { name: 'Start anyway' })).toBeVisible();
+  await page.getByRole('button', { name: 'Start anyway' }).click();
   await expect(page.locator('.sp-core-num')).toHaveText('0');
   await expect(page.locator('.sp-round')).toHaveText('Round 1 of 6');
   for (let round = 1; round <= 6; round++) { await passAll(page, 2); await page.getByRole('button', { name: nextName(round) }).click(); }
   await expect(page.getByRole('heading', { name: 'Mission complete!' })).toBeVisible();
-  await page.getByRole('button', { name: 'Teacher setup', exact: true }).click();
+  await page.getByRole('button', { name: 'New session', exact: true }).click();
   await expect(page.getByLabel('Crew size')).toBeVisible();
   expect(errors).toEqual([]);
 });
