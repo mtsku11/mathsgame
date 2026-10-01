@@ -79,7 +79,7 @@ Use PLAN.md's provisional defaults for independent software work while the remai
 - [x] Phase 4 — Sound, music and voice integration (132 unit, 149 browser, offline 3/3; 362 KB gzipped JS; voice sprites trimmed of silence, Whisper re-check passed; owner listening review of levels and loop seams pending)
 - [x] Phase 5 — Front-of-house screens (132 unit, 164 browser, offline 3/3; axe clean on setup, switch setup, check-in, pause; 200% zoom reachable; switch-cap colours deferred to Phase 6; hosted spec selectors deferred to Phase 7)
 - [x] Phase 6 — Spotlight mode, access and performance (142 unit, 193 browser, offline 3/3; ≥51.6 fps at high in every scene; numbers in docs/HARDWARE-TEST.md)
-- [ ] Phase 7 — Delivery (owner approval before merge/deploy)
+- [x] Phase 7 — Delivery (owner approved; merged to `main` and deployed 1 October 2026; hosted suite 33/33 on GitHub Pages; live title and setup screenshots checked)
 
 ## Deferred
 
