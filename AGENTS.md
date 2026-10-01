@@ -4,14 +4,14 @@
 
 Number Crew is a cooperative browser maths game for Maths Week in a special school. The confirmed group is 1–4 players (originally 3–4; owner update, 30 September 2026) aged 7–15 sharing one screen and one Microsoft Xbox Adaptive Controller (XAC) on a Windows PC, with exactly two switches per pupil, counting 1–5, and addition within 10. The TypeScript/Vite implementation includes core maths, input filtering, calibration, practice, a six-round mission, and classroom screens. Phase 1 and Phase 2 software verification have passed, and the public GitHub Pages deployment passes all 21 hosted Chromium scenarios, including offline mission play, mission-progress artwork, access announcements, and recovery simulations. Manual access acceptance and physical XAC testing remain outstanding. PLAN.md distinguishes confirmed requirements from provisional classroom defaults.
 
-A game-quality redesign is in progress on branch `redesign` (docs/REDESIGN-PLAN.md): 1–4 players, direction Star Pilots (glowing arcade space), and a boost round after every maths round. It is not merged or deployed; `main` and the public site still run the earlier build.
+The Star Pilots game-quality redesign (docs/REDESIGN-PLAN.md: 1–4 players, glowing arcade space, a boost round after every maths round, generated music and narration, Spotlight turns) was approved by the owner and merged to `main` on 1 October 2026; GitHub Pages now serves it. The post-deploy hosted suite is 33 Chromium scenarios. The owner's listening review of the audio, manual access acceptance and physical XAC testing remain outstanding.
 
 ## Context-loading order
 
 1. Read this file.
 2. Read PLAN.md sections 1–3 for requirements, assumptions, and the game concept.
 3. Read TODO.md for phase status and the next unfinished acceptance gate.
-4. On branch `redesign`, read docs/REDESIGN-PLAN.md for the current phase brief.
+4. Read docs/REDESIGN-PLAN.md for the Star Pilots design decisions that supersede PLAN.md's presentation.
 5. Read only the PLAN.md sections needed for that gate; search before reading source files.
 6. Once created, consult docs/HARDWARE-TEST.md for actual classroom compatibility results.
 

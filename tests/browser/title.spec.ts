@@ -21,7 +21,9 @@ test('title is the first screen with one Start button and no console errors', as
   const errors: string[] = [], external: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
-  page.on('request', request => { if (!/^(data:|http:\/\/127\.0\.0\.1)/.test(request.url())) external.push(request.url()); });
+  // Same origin as the game, so the check holds on the dev server and on the hosted site.
+  const origin = new URL(test.info().project.use.baseURL!).origin;
+  page.on('request', request => { if (!request.url().startsWith('data:') && new URL(request.url()).origin !== origin) external.push(request.url()); });
   await page.goto('./');
   await ready(page);
   await expect(page.getByRole('heading', { name: 'Number Crew', level: 1 })).toBeVisible();
