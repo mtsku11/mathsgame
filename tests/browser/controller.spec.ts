@@ -6,18 +6,26 @@ async function press(page: Page, buttons: number[]) {
   await page.waitForTimeout(150);
 }
 async function mapAndCheck(page: Page, count: number) {
+  // Each step waits for the screen to accept the next press or release, so a slow CI runner cannot miss a short press.
+  const status = page.locator('#calibration-status');
   for (let i = 0; i < count * 2; i++) {
     await page.locator('.map-button').nth(i).click();
-    await page.waitForTimeout(150);
-    await press(page, [i]); await press(page, []);
+    await expect(status).toContainText('Press one switch');
+    await press(page, [i]);
+    await expect(status).toContainText('Now release that switch');
+    await press(page, []);
     await expect(page.locator('.map-button').nth(i)).toContainText('checked');
   }
   await page.getByRole('button', { name: 'Start crew check-in' }).click();
   await page.waitForTimeout(600);
-  await press(page, Array.from({ length: count }, (_, i) => i * 2));
-  await press(page, []); await page.waitForTimeout(600);
-  await press(page, Array.from({ length: count }, (_, i) => i * 2 + 1));
-  await press(page, []);
+  for (const side of [0, 1]) {
+    const caps = page.locator(`.ck-cap[data-answer-side="${side}"]`);
+    await press(page, Array.from({ length: count }, (_, i) => i * 2 + side));
+    for (let i = 0; i < count; i++) await expect(caps.nth(i)).not.toHaveClass(/is-ready/);
+    await press(page, []);
+    for (let i = 0; i < count; i++) await expect(caps.nth(i)).toHaveAttribute('aria-label', /, checked$/);
+    await page.waitForTimeout(600);
+  }
 }
 for (const count of [1, 2, 3, 4]) {
   test(`simulated shared XAC: ${count} pupils calibrate and recover without losing progress`, async ({ page }) => {
