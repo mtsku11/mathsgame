@@ -1,6 +1,6 @@
 # Number Crew build backlog
 
-Status: Phase 1 playable-slice and Phase 2 full-mission software gates are verified. The Star Pilots redesign (branch `redesign`, Phases 0–6 done, Phase 7 awaiting owner approval of the preview) replaces the practice screen with crew check-in, supports 1–4 pupils and adds boost rounds, audio and Spotlight turns; it is not merged or deployed. The public GitHub Pages build is live; its deployment passed 15 unit tests and all 21 hosted Chromium scenarios, including offline play, mission progress, access announcements, visibility recovery, and unrelated-controller handling, on 30 September 2026. Manual classroom access acceptance and physical XAC verification remain open. Unchecked items require implementation or further acceptance evidence; they do not necessarily mean the code is absent.
+Status: Phase 1 playable-slice and Phase 2 full-mission software gates are verified. The Star Pilots redesign replaces the practice screen with crew check-in, supports 1–4 pupils and adds boost rounds, audio and Spotlight turns; it was merged to `main` and deployed to GitHub Pages on 1 October 2026, where the post-deploy run passed 142 unit tests and all 33 hosted Chromium scenarios, including offline play. Manual classroom access acceptance and physical XAC verification remain open. Unchecked items require implementation or further acceptance evidence; they do not necessarily mean the code is absent.
 
 ## Confirm classroom facts
 
