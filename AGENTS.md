@@ -6,6 +6,8 @@ Number Crew is a cooperative browser maths game for Maths Week in a special scho
 
 The Star Pilots game-quality redesign (docs/REDESIGN-PLAN.md: 1–4 players, glowing arcade space, a boost round after every maths round, generated music and narration, Spotlight turns) was approved by the owner and merged to `main` on 1 October 2026; GitHub Pages now serves it. The post-deploy hosted suite is 33 Chromium scenarios. The owner's listening review of the audio, manual access acceptance and physical XAC testing remain outstanding.
 
+Tablet switches (owner request, 15 October 2026) are a third input mode: each pupil's tablet opens `pad.html` and its two big buttons act as that pupil's two switches. Presses reach the classroom screen through an owner-approved Cloudflare Worker relay (`relay/`, deployed to the owner's account as `number-crew-relay`). Real tablets on the school network are NOT TESTED.
+
 ## Context-loading order
 
 1. Read this file.
@@ -33,6 +35,9 @@ These scripts are defined in package.json. Install dependencies before running t
 | Inspect production build locally | `npm run preview` |
 | Deploy | Push approved changes to `main` in `mtsku11/mathsgame`; `.github/workflows/pages.yml` builds, deploys, and tests GitHub Pages |
 | Test hosted site | `PLAYWRIGHT_BASE_URL=https://mtsku11.github.io/mathsgame/ npm run test:hosted` (no local server) |
+| Run the tablet relay locally | `npx wrangler dev --config relay/wrangler.jsonc --ip 127.0.0.1 --port 8791 --inspector-port 9239` (`npm run test:e2e` starts it; port 8787 is used by another local project) |
+| Typecheck the relay | `npx tsc -p relay` |
+| Deploy the tablet relay | `npx wrangler deploy --config relay/wrangler.jsonc` (owner's Cloudflare login; not part of the Pages workflow) |
 
 Use a maintained Node.js version compatible with the chosen Vite version, verified against current official documentation. Use local dependencies and a lockfile. Preserve these planning files when creating the application; do not run a scaffold that replaces the non-empty workspace.
 
@@ -44,7 +49,8 @@ The main implementation and handoff paths are below.
 - `TODO.md` — ordered build backlog and unresolved classroom facts.
 - `package.json` — scripts and dependency versions.
 - `src/main.ts` — teacher setup, controller lifecycle, practice, panels, and orchestration.
-- `src/input/` — input capture, calibration, and per-player filtering.
+- `src/input/` — input capture, calibration, per-player filtering, and the tablet link (`tablets.ts`).
+- `src/pad/` and `pad.html` — the page a pupil's tablet opens; `relay/` — the Cloudflare Worker that passes tablet button states to the classroom screen.
 - `src/game/session.ts` and `src/game/questions.ts` — session transitions and deterministic maths.
 - `src/ui/art.ts` and `src/style.css` — local SVG artwork and responsive presentation.
 - `src/offline/register.ts` and `scripts/offline.mjs` — production precaching and update handling.
@@ -59,7 +65,7 @@ The main implementation and handoff paths are below.
 - Keep cooldowns and answer locks per pupil. Process different pupils' simultaneous input independently. Held or bouncing switches must not answer subsequent questions.
 - Default to cooperative, untimed play. No speed bonuses, elimination, public accuracy ranking, or automatic difficulty increase. The redesign's boost round is the only exception (rapid pressing, no fail state); maths questions stay untimed.
 - Keep question state independent from rendering and animation. Pause preserves questions, results, and mission progress.
-- Serve the game as a static app. No account, backend, analytics, advertisements, runtime CDN, or pupil personal data is needed.
+- Serve the game as a static app. No account, backend, analytics, advertisements, runtime CDN, or pupil personal data is needed. The one exception is the owner-approved tablet relay, used only in tablet mode: it passes button states and switch-cap colours, stores and logs nothing, and accepts only the published game's and local development origins. XAC and keyboard play stay fully static and offline.
 - Store only anonymous setup preferences locally. Results remain in memory and clear on session reset. Device bindings require revalidation on a new session.
 - Keep changes surgical. Do not introduce a game engine or UI framework without a concrete need demonstrated by this scope.
 - Use Context7/current primary documentation for tooling assumptions. Use Playwright for visible UI and interaction verification. Browser emulation is not evidence that physical XAC switches work.

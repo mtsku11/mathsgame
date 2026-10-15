@@ -2,7 +2,7 @@ import type { MusicId, SfxId } from './manifest';
 
 // Everything here decides what may play and how loud; nothing touches Howler, the DOM or a clock.
 export interface AudioSettings { quiet: boolean; effectsVolume: number; musicVolume: number; voiceVolume: number; narration: boolean; lowStim: boolean }
-export type ScreenName = 'title' | 'setup' | 'switches' | 'checkin' | 'play' | 'finale';
+export type ScreenName = 'title' | 'setup' | 'switches' | 'tablets' | 'checkin' | 'play' | 'finale';
 export type BoostMusic = 'off' | 'live' | 'faded';
 
 export const DUCK_LEVEL = 0.33;

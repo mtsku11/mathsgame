@@ -19,7 +19,8 @@
     "@types/howler": "^2.2.13",
     "typescript": "^5.9.3",
     "vite": "8.0.10",
-    "vitest": "4.1.6"
+    "vitest": "4.1.6",
+    "wrangler": "^4.151.0"
   },
   "dependencies": {
     "@fontsource/baloo-2": "^5.3.0",
@@ -27,6 +28,7 @@
     "gsap": "^3.15.0",
     "howler": "^2.2.4",
     "pixi-filters": "^6.1.5",
-    "pixi.js": "^8.21.0"
+    "pixi.js": "^8.21.0",
+    "uqr": "^0.1.3"
   }
 }

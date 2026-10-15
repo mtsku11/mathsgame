@@ -81,6 +81,11 @@ Use PLAN.md's provisional defaults for independent software work while the remai
 - [x] Phase 6 — Spotlight mode, access and performance (142 unit, 193 browser, offline 3/3; ≥51.6 fps at high in every scene; numbers in docs/HARDWARE-TEST.md)
 - [x] Phase 7 — Delivery (owner approved; merged to `main` and deployed 1 October 2026; hosted suite 33/33 on GitHub Pages; live title and setup screenshots checked)
 
+## Tablet switches (owner request, 15 October 2026)
+
+- [x] Tablet mode: setup option, tablet setup screen with a code per player, `pad.html` two-button page, Cloudflare relay deployed as `number-crew-relay`, pause when a tablet drops out (8 unit, 5 browser incl. four tablets through the local relay; same specs pass through the deployed relay; median 94 ms press to screen)
+- [ ] NOT TESTED: real tablets (iPad Safari, Android Chrome) on the school network, including camera scanning, a tablet locking mid-game and school Wi-Fi or firewall rules
+
 ## Deferred
 
 - Extra maths types, themes, independent two-switch settings navigation, one-switch scanning, competition, and remote multiplayer.

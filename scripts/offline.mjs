@@ -27,9 +27,10 @@ self.addEventListener('message', event => {
 });
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET' || new URL(event.request.url).origin !== self.location.origin) return;
+  // A page that is in the cache (pad.html) opens as itself; every other address opens the game.
   event.respondWith(caches.open(CACHE).then(async cache => {
-    const key = event.request.mode === 'navigate' ? new URL('index.html', self.registration.scope).href : event.request;
-    return await cache.match(key) || fetch(event.request);
+    if (event.request.mode !== 'navigate') return await cache.match(event.request) || fetch(event.request);
+    return await cache.match(event.request, { ignoreSearch: true }) || await cache.match(new URL('index.html', self.registration.scope).href) || fetch(event.request);
   }));
 });
 `);

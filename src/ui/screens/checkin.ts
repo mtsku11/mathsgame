@@ -11,7 +11,7 @@ import { createStage, type Stage } from '../stage';
 
 export interface CheckInState {
   players: number;
-  mode: 'controller' | 'keyboard';
+  mode: 'controller' | 'tablet' | 'keyboard';
   // The key letters shown under each switch in keyboard mode.
   keys: [string, string][];
   caps: [CapColour, CapColour][];
@@ -113,8 +113,8 @@ export function createCheckInScreen(source: () => CheckInState): CheckInScreen {
       const anyway = find<HTMLButtonElement>('[data-action="start-anyway"]');
       anyway.hidden = state.recovering || done === state.players;
       const back = find<HTMLButtonElement>('.ck-back');
-      set(back, 'data-action', state.mode === 'controller' ? 'controls' : 'setup');
-      text(back, state.mode === 'controller' ? 'Switch setup' : 'Back to setup');
+      set(back, 'data-action', { controller: 'controls', tablet: 'tablets', keyboard: 'setup' }[state.mode]);
+      text(back, { controller: 'Switch setup', tablet: 'Tablet setup', keyboard: 'Back to setup' }[state.mode]);
     },
     unmount() {
       bobs.forEach(bob => { kill(bob); kill(bob.parentElement!); });

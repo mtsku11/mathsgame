@@ -10,6 +10,7 @@ import { createSession, answer, advance, pass, ready, type Session } from './gam
 import { createBoostRun } from './app/boostRun';
 import { InputFilter, type Pair } from './input/normalize';
 import { Calibration, ConnectionHistory, describeDevice, readDevices, down, type Binding, type Device } from './input/gamepad';
+import { newRoomCode, padUrl, relayFrom, ROOM_ALPHABET, TabletLink } from './input/tablets';
 import { TransitionTimer } from './game/transition';
 import { createAudio } from './audio/audio';
 import { registerOffline } from './offline/register';
@@ -22,6 +23,8 @@ import { createFinaleScreen, type FinaleState } from './ui/screens/finale';
 import { createPlayScreen, type PlayState } from './ui/screens/play';
 import { createSetupScreen, type InputMode, type SetupState } from './ui/screens/setup';
 import { createSwitchScreen, type SwitchState } from './ui/screens/switches';
+import { createTabletScreen, type TabletState } from './ui/screens/tablets';
+import { capSpec } from './ui/art/caps';
 import * as arrive from './ui/fx/arrive';
 import * as motion from './ui/fx/motion';
 import { isCalm, setLowStim, setReducedMotion } from './ui/fx/motion';
@@ -42,8 +45,8 @@ setLowStim(settings.lowStim);
 document.body.classList.toggle('simple', settings.simple);
 const audio = createAudio(settings);
 pixi.applyQuality(settings.quality);
-type View = 'setup' | 'controls' | 'checkin' | 'play' | 'results';
-const routes = { setup: 'setup', controls: 'switches', checkin: 'checkin', play: 'play', results: 'finale' } as const;
+type View = 'setup' | 'controls' | 'tablets' | 'checkin' | 'play' | 'results';
+const routes = { setup: 'setup', controls: 'switches', tablets: 'tablets', checkin: 'checkin', play: 'play', results: 'finale' } as const;
 let screen: View = 'setup';
 let mode: InputMode = 'controller';
 let session: Session | null = null;
@@ -70,6 +73,10 @@ const transition = new TransitionTimer();
 let lastDiagnostic = '';
 let readyRound = 0;
 let lastFrame = 0;
+let tablets: TabletLink | null = null;
+let tabletRaw: Pair[] = emptyPairs();
+let tabletLive = [false, false, false, false];
+let tabletOnline = false;
 const connectionHistory = new ConnectionHistory();
 
 function emptyPairs(): Pair[] { return Array.from({ length: 4 }, () => [false, false]); }
@@ -92,6 +99,7 @@ function beginTurn(): void {
 }
 // What every switch is doing right now: keyboard keys or the learned controller buttons.
 function readRaw(): Pair[] {
+  if (mode === 'tablet') return tabletRaw.map(pair => [...pair] as Pair);
   return settings.players.map((player, i) => [0, 1].map(side => mode === 'controller' ? down(bindings[i][side], devices) : keys.has(player.keys[side])) as Pair);
 }
 function missionAnnouncement(): string {
@@ -108,6 +116,25 @@ function switchState(): SwitchState {
   return {
     players: settings.count, bindings, learning: calibrationTarget, complete, recovering, caps: settings.players.slice(0, settings.count).map(player => player.caps),
     message: calibration ? calibration.message : complete ? 'All switches are matched. Next, the crew checks them together.' : 'Choose a switch below, then press and release the one you want for it.',
+  };
+}
+// One room per browser tab, kept across a reload so the tablets reconnect by themselves.
+function openTablets(): TabletLink {
+  if (tablets) return tablets;
+  let room = '';
+  try { room = sessionStorage.getItem('number-crew-room') ?? ''; } catch { /* storage blocked: a new room each load */ }
+  if (room.length !== 8 || ![...room].every(letter => ROOM_ALPHABET.includes(letter))) room = newRoomCode();
+  try { sessionStorage.setItem('number-crew-room', room); } catch { /* the room still works for this page */ }
+  tablets = new TabletLink(relayFrom(location.search), room, player => ({ caps: settings.players[player].caps.map(id => { const spec = capSpec(id); return spec && { fill: spec.fill, ink: spec.ink }; }) }));
+  tablets.connect();
+  return tablets;
+}
+function tabletState(): TabletState {
+  const link = openTablets();
+  const page = new URL('pad.html', location.href);
+  return {
+    players: settings.count, room: link.room, links: Array.from({ length: settings.count }, (_, i) => padUrl(location.href, link.relay, link.room, i)),
+    page: `${page.host}${page.pathname}`, connected: tabletLive, online: tabletOnline, replaced: link.replaced, caps: settings.players.slice(0, settings.count).map(player => player.caps),
   };
 }
 function checkInState(): CheckInState {
@@ -154,6 +181,7 @@ function render(): void {
     case 'finale': if (session) finale.update(finaleState()); return;
     case 'setup': setupScreen.update(setupState()); return;
     case 'switches': switches.update(switchState()); return;
+    case 'tablets': tabletScreen.update(tabletState()); return;
     case 'checkin': checkin.update(checkInState()); return;
   }
 }
@@ -189,10 +217,11 @@ function perform(action: string): void {
     case 'prepare':
       notice = saveSettings(settings) ? '' : 'Preferences cannot be saved in this browser; this session will still work.';
       endSession(); bindings = emptyBindings(); stopLearning();
-      if (mode === 'controller') enter('controls'); else prepareCheckin();
+      if (mode === 'controller') enter('controls'); else if (mode === 'tablet') perform('tablets'); else prepareCheckin();
       return;
     case 'setup': endSession(); bindings = emptyBindings(); stopLearning(); resetInput(); enter('setup'); return;
     case 'controls': stopLearning(); enter('controls'); return;
+    case 'tablets': openTablets().sendLooks(); enter('tablets'); return;
     case 'clear-bindings': bindings = emptyBindings(); stopLearning(); render(); return;
     case 'checkin': if (mode === 'controller' && !bindingsComplete()) return; prepareCheckin(); return;
     case 'start': if (crewChecked()) launch(); return;
@@ -313,8 +342,23 @@ function loseController(): void {
 }
 // A finished boost moves on to the next round by itself, once the stations have flown back from the saucer row (about 1 s), so the new round never deals in over that flight.
 const AFTER_BOOST_MS = 1200;
+// A tablet that drops out mid-journey pauses the game, as an unplugged controller does; it reconnects by itself and the teacher resumes.
+function sampleTablets(): void {
+  if (!tablets) return;
+  tabletRaw = tablets.read();
+  const live = tablets.connected(), online = tablets.online();
+  const lost = live.map((on, i) => tabletLive[i] && !on && i < settings.count).flatMap((gone, i) => gone ? [i + 1] : []);
+  const changed = online !== tabletOnline || live.some((on, i) => on !== tabletLive[i]);
+  tabletLive = live; tabletOnline = online;
+  if (mode !== 'tablet') return;
+  if (lost.length && screen === 'play' && session && !session.finished) {
+    pause(`${lost.length === 1 ? `Player ${lost[0]}’s tablet` : `The tablets for players ${lost.join(' and ')}`} lost the connection. Your questions and stars are unchanged. Tablets reconnect by themselves; resume when they are back.`);
+  }
+  if (screen === 'tablets') { if (changed) render(); tabletScreen.lights(tabletRaw); }
+}
 function frame(now: number): void {
   const snapshot = readDevices(); devices = snapshot.devices; deviceError = snapshot.error;
+  sampleTablets();
   connectionHistory.sample(devices, now);
   if (mode === 'controller' && screen !== 'setup' && screen !== 'results' && bindings.flat().some(binding => binding && !devices.some(device => device.index === binding.device && device.id === binding.id))) loseController();
   if (screen === 'controls' && router.current() === 'switches') {
@@ -371,7 +415,7 @@ function frame(now: number): void {
   if (changed) { render(); if (announcements.length) announce(announcements.join(' ')); }
   requestAnimationFrame(frame);
 }
-const router = createRouter<'title' | 'setup' | 'switches' | 'checkin' | 'play' | 'finale'>(app, name => events.emit('screen', { name }));
+const router = createRouter<'title' | 'setup' | 'switches' | 'tablets' | 'checkin' | 'play' | 'finale'>(app, name => events.emit('screen', { name }));
 const play = createPlayScreen(playState, { quality: () => settings.quality, onBoostTap: player => { if (pulses[player]) pulses[player][0] = true; } });
 const boostRun = createBoostRun({
   settings, view: play.boost, calm: isCalm, announce, round: () => session?.round ?? 1, stars: () => session?.stars ?? 0,
@@ -381,10 +425,12 @@ const boostRun = createBoostRun({
 const finale = createFinaleScreen(finaleState, { quality: () => settings.quality });
 const setupScreen = createSetupScreen(setupState, { settings, mode: () => mode, setMode: next => { mode = next; }, refreshAudio: () => audio.refresh(), applyQuality: () => pixi.applyQuality(settings.quality) });
 const switches = createSwitchScreen(switchState);
+const tabletScreen = createTabletScreen(tabletState);
 const checkin = createCheckInScreen(checkInState);
 router.register('title', createTitleScreen({ quality: () => settings.quality, onSetup: () => enter('setup') }));
 router.register('setup', setupScreen);
 router.register('switches', switches);
+router.register('tablets', tabletScreen);
 router.register('checkin', checkin);
 router.register('play', play);
 router.register('finale', finale);

@@ -31,7 +31,7 @@ export interface GameEvents {
   crewStart: void;
   // auto: read at the start of a Spotlight turn, so low stimulation silences it; the teacher's "Say it" is not auto.
   sayQuestion: { player: number; question: Question; auto?: boolean };
-  screen: { name: 'title' | 'setup' | 'switches' | 'checkin' | 'play' | 'finale' };
+  screen: { name: 'title' | 'setup' | 'switches' | 'tablets' | 'checkin' | 'play' | 'finale' };
   gamePaused: void;
   gameResumed: void;
   uiClick: void;

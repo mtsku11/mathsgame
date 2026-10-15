@@ -467,3 +467,32 @@ overflow-wrap:anywhere}
 .sw-slot.has-cap .sw-cap{
 color:var(--cap-ink);
 background:radial-gradient(circle at 50% 38%,var(--cap-light) 0%,var(--cap) 48%,var(--cap-dark) 100%)}
+/* Tablet setup: each card shows the code a tablet scans, whether it is connected, and its two buttons lighting up as they are pressed. */
+.tb-qr{
+width:min(100%,210px);
+padding:10px;
+border-radius:16px;
+background:#fff;
+line-height:0}
+.tb-qr svg{
+width:100%;
+height:auto}
+.tb-who{
+display:flex;
+align-items:center;
+gap:10px}
+.tb-who .sw-pilot svg{
+width:84px}
+.tb-state{
+margin:0;
+font-weight:800;
+color:var(--sp-lilac)}
+.tb-state.is-on{
+color:var(--sp-green)}
+.tb-slot{
+cursor:default}
+.tb-page,.tb-room{
+color:#fff;
+overflow-wrap:anywhere}
+.tb-room{
+letter-spacing:2px}

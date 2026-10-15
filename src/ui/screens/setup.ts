@@ -8,7 +8,7 @@ import { caps, type CapColour } from '../art/caps';
 import { skyStars, starBadge } from '../art/stars';
 import { setLowStim, setReducedMotion } from '../fx/motion';
 
-export type InputMode = 'controller' | 'keyboard';
+export type InputMode = 'controller' | 'tablet' | 'keyboard';
 export interface SetupState { offline: string; canUpdate: boolean; notice: string }
 export interface SetupScreen extends Screen { update(state: SetupState): void }
 export interface SetupHooks {
@@ -56,6 +56,7 @@ ${player.keys.map((key, side) => `<label class="tp-field"><span>${side ? 'Right'
 <div class="tp-crew" id="tp-crew">${pupilRows()}</div></section>
 <section class="tp-card" aria-labelledby="tp-input-title"><fieldset class="tp-choices"><legend id="tp-input-title">How will the crew answer?</legend>
 <label class="tp-choice"><input type="radio" name="input-mode" value="controller" ${checked(mode === 'controller')}><span>Xbox Adaptive Controller<small>One shared controller · 2 switches per player</small></span></label>
+<label class="tp-choice"><input type="radio" name="input-mode" value="tablet" ${checked(mode === 'tablet')}><span>Tablets<small>One tablet per player · 2 big buttons each · needs internet</small></span></label>
 <label class="tp-choice"><input type="radio" name="input-mode" value="keyboard" ${checked(mode === 'keyboard')}><span>Keyboard &amp; on-screen buttons<small>Try the game without a controller</small></span></label></fieldset></section>
 <section class="tp-card" aria-labelledby="tp-flow-title"><h2 id="tp-flow-title">Between rounds</h2><p class="tp-hint">Choose whether you or the game moves the crew on.</p>
 <label class="tp-check"><input id="auto-advance" type="checkbox" ${checked(settings.autoAdvance)}> Advance completed rounds automatically</label>
@@ -77,7 +78,7 @@ ${player.keys.map((key, side) => `<label class="tp-field"><span>${side ? 'Right'
 <div class="tp-actions"><button type="button" class="tp-go" data-action="prepare"></button><p class="tp-foot">Teacher-led · 6 rounds · No names or accounts</p></div></main></div>`;
   }
 
-  const primaryLabel = (): string => `${hooks.mode() === 'controller' ? 'Set up the switches' : 'Start crew check-in'} <span aria-hidden="true">${icons.arrow(24)}</span>`;
+  const primaryLabel = (): string => `${{ controller: 'Set up the switches', tablet: 'Connect the tablets', keyboard: 'Start crew check-in' }[hooks.mode()]} <span aria-hidden="true">${icons.arrow(24)}</span>`;
   function syncPrimary(): void { find('[data-action="prepare"]').innerHTML = primaryLabel(); }
   function syncPlayers(): void { find('#tp-crew').innerHTML = pupilRows(); find('#tp-access').innerHTML = accessRows(); }
 

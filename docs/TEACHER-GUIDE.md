@@ -22,9 +22,10 @@ Number Crew is a cooperative maths game for one to four pupils sharing one scree
 1. **PC and browser.** Use Edge or Chrome on the Windows PC. A wired USB connection for the XAC is more reliable than Bluetooth.
 2. **First load online.** Open the game address while the PC is online. Go to teacher setup and wait for **Ready offline** at the top right. The same browser profile must keep its site data; clearing it removes the offline copy.
 3. **Test offline.** Disconnect the network, reload the page and check it still starts. Do this on the classroom PC, not only on another computer.
-4. **XAC.** Plug in the XAC by USB (or pair it in Windows Bluetooth settings). Connect two switches per pupil to different sockets. Staff choose switch positions to suit each pupil.
-5. **Sound and screen.** Set the PC volume first, then the game volumes (section 3). Use full screen (F11) if you like. Close other windows so the game stays in front.
-6. **Rehearse.** Run a whole mission with your crew size, including one boost round, before the pupils arrive.
+4. **Tablets (if used instead of the XAC).** Charge one tablet per pupil and connect them and the PC to the internet. Set each tablet not to lock or dim during the lesson (the game asks the tablet to stay awake, but not every tablet allows it). Check the school Wi-Fi lets the tablets open the game address.
+5. **XAC.** Plug in the XAC by USB (or pair it in Windows Bluetooth settings). Connect two switches per pupil to different sockets. Staff choose switch positions to suit each pupil.
+6. **Sound and screen.** Set the PC volume first, then the game volumes (section 3). Use full screen (F11) if you like. Close other windows so the game stays in front.
+7. **Rehearse.** Run a whole mission with your crew size, including one boost round, before the pupils arrive.
 
 The game needs a web server. Do not double-click `index.html`.
 
@@ -44,6 +45,7 @@ Press **Start** on the title screen to reach teacher setup. The pupils' switches
 **How will the crew answer?**
 
 - *Xbox Adaptive Controller*: one shared controller, two switches per player. You will set up the switches next.
+- *Tablets*: one tablet per player (up to 4), each showing two big buttons, left and right, that work as that pupil's two switches. Needs internet on the PC and the tablets. You will connect the tablets next.
 - *Keyboard & on-screen buttons*: to try the game without a controller. Default keys are Player 1 F and J, Player 2 A and L, Player 3 C and M, Player 4 Q and P (left and right). On-screen answer buttons also work.
 
 **Between rounds**
@@ -72,7 +74,7 @@ Press **Start** on the title screen to reach teacher setup. The pupils' switches
 
 The game remembers these settings in this browser only. No names or accounts are stored. Sound settings can also be changed while paused.
 
-Press **Set up the switches** (controller) or **Start crew check-in** (keyboard).
+Press **Set up the switches** (controller), **Connect the tablets** (tablets) or **Start crew check-in** (keyboard).
 
 ## 4. Switch setup (controller only)
 
@@ -86,13 +88,23 @@ The game learns the physical switches; button numbers on screen are the browser'
 
 Switch mapping is not kept between sessions. You set it up again each time.
 
+## 4b. Tablet setup (tablets only)
+
+1. Each player's card shows a code. On that player's tablet, scan the code with the camera and open the link. The tablet shows the player's pilot and two big buttons, and says **Connected to the game**.
+2. No camera? On the tablet, open the address shown on the screen (it ends in `pad.html`), type the **room code** and choose the player number.
+3. Ask each pupil to press both buttons. The matching lights on the screen show every press. When the screen says all tablets are connected, press **Start crew check-in**.
+
+The tablet buttons take the switch colours you chose for that pupil in setup. Only button presses travel between the tablets and the screen, through a small Number Crew relay on the internet; no names or answers are sent. A press normally reaches the screen in about a tenth of a second.
+
+If a second tablet opens the same player's link, it takes over that player, and the first tablet offers **Use this tablet for Player N** to take it back. The room code stays the same if you reload the game page in the same browser tab, so the tablets reconnect by themselves.
+
 ## 5. Crew check-in
 
 ![Crew check-in](images/04b-checkin.png)
 
 Every pilot starts asleep. Each pupil presses their left switch, then their right, to wake their pilot. A tick shows each switch has worked. When "**3 of 3 pilots ready**" shows, press **Start mission**, or press **Enter** or **N** on the keyboard.
 
-If a pupil cannot take part yet, **Start anyway** begins with that pilot still asleep. It is always your choice and never needed for the game to work. Use **Switch setup** (or **Back to setup**) to change something.
+If a pupil cannot take part yet, **Start anyway** begins with that pilot still asleep. It is always your choice and never needed for the game to work. Use **Switch setup**, **Tablet setup** or **Back to setup** to change something.
 
 ## 6. During play
 
@@ -163,6 +175,8 @@ It is an observation aid, not a mark. It does not rank pupils, it does not inclu
 
 - **Controller not seen**: check the USB cable, then press and release a switch with the game page in front. Open Live controller diagnostics on the switch setup screen to see what the browser reports.
 - **Controller lost during play**: the game pauses and offers **Reconnect & check switches**. Reconnect the XAC, learn the switches again, pass crew check-in, then **Resume journey**. Questions and stars are kept. A different controller disconnecting does not interrupt play.
+- **Tablet lost during play**: the game pauses and names the player. The tablet reconnects by itself when it is back on its page with internet; then press **Resume journey**. Questions and stars are kept.
+- **Tablet will not connect**: check the tablet has internet and is on the right player's link. If the setup screen says it cannot reach the tablet relay, check the PC's internet. Some school networks block this kind of connection; ask IT to allow `number-crew-relay.marcscullymail.workers.dev`. Keyboard and the XAC still work without internet.
 - **The game paused by itself**: the page lost focus or was hidden. Click the game, release all switches and press Resume.
 - **A switch answers twice or too fast**: increase that pupil's Input cooldown in setup.
 - **Animation stutters**: set Graphics to Low power, tick Less decoration, or close other programs.
@@ -175,6 +189,7 @@ It is an observation aid, not a mark. It does not rank pupils, it does not inclu
 These are **NOT TESTED**, and the game must not be described as ready for classroom use until they are checked and recorded in HARDWARE-TEST.md:
 
 - The physical Xbox Adaptive Controller with the pupils' actual switches (USB and Bluetooth), including several pupils pressing at once and boost-round pressing.
+- Real tablets (iPad Safari and Android Chrome) as switches on the school network, including the camera scan, a tablet locking mid-game, and several pupils pressing at once.
 - Performance on the classroom PC, including the Graphics Auto choice and boost finales.
 - The real Windows display at 200% zoom and the classroom screen or projector.
 - Screen readers (NVDA on Windows, VoiceOver). The game announces key events through one polite status message, but this has not been confirmed with a real screen reader.

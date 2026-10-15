@@ -82,7 +82,7 @@ Three or four pupil panels sit below the shared rocket. One shows three large ob
 
 | Area | Deliverable |
 | --- | --- |
-| Participation | One to four local pupils sharing one XAC, each with two mapped switches; keyboard and touch alternatives |
+| Participation | One to four local pupils sharing one XAC, each with two mapped switches; or one tablet per pupil showing two big buttons (owner scope change, 15 October 2026; needs internet and the Cloudflare relay in `relay/`); keyboard and touch alternatives |
 | Controller access | Binding wizard, visible switch tester, reconnect recovery, configurable per-pupil input cooldown |
 | Game | One polished six-round cooperative mission with three visual destinations |
 | Maths | Counting 1–5 and addition within 5/10; per-pupil selection |
