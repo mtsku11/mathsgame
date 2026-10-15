@@ -1,6 +1,6 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
 import { mkdirSync, rmSync } from 'node:fs';
-import { boostFlow, boostPhase, boostState, countOf, mash, nextButton, passAll, recordBoost, startGame, tapKey } from '../helpers';
+import { boostFlow, boostPhase, boostState, countOf, mash, passAll, recordBoost, startGame, tapKey, untilRound } from '../helpers';
 
 // Phase 3a review evidence: 1280x720 videos and screenshots in test-results/redesign/phase3a/.
 // Off by default so the normal suite stays fast: PHASE3A_EVIDENCE=1 npx playwright test tests/browser/boostEvidence.spec.ts
@@ -46,8 +46,7 @@ async function toWarpRound(page: Page, count: number, boost: { seconds?: number;
   await page.waitForTimeout(700);
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Skip boost round' }).click();
-  await page.waitForTimeout(900);
-  await nextButton(page).click();
+  await untilRound(page, 2);
   await page.waitForTimeout(1200);
   await passAll(page, count);
   await page.waitForTimeout(1800);

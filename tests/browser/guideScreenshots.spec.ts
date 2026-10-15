@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
-import { answerCorrectly, boostPhase, installXac, mapAndCheck, mash, nextButton, openSetup, setBoost, startGame } from '../helpers';
+import { answerCorrectly, boostPhase, installXac, mapAndCheck, mash, openSetup, setBoost, startGame, untilRound } from '../helpers';
 
 // Screenshots for docs/TEACHER-GUIDE.md, 1280x720, written to docs/images/. They were then reduced to 128-colour PNGs with Pillow (Image.quantize) to stay under 300 KB.
 // Off by default: GUIDE_SHOTS=1 npx playwright test tests/browser/guideScreenshots.spec.ts
@@ -74,7 +74,7 @@ test('teacher guide screenshots: switches, check-in, boost, finale', async ({ pa
   // Rounds 2-6: pass everyone and skip the boost; skipping round 6's boost ends the mission by itself.
   for (let round = 1; round <= 6; round++) {
     if (round > 1) { await answerRound(page, round === 2); await page.getByRole('button', { name: 'Boost round!' }).click(); await page.keyboard.press('Escape'); await page.getByRole('button', { name: 'Skip boost round' }).click(); }
-    if (round < 6) { await nextButton(page).click(); await page.waitForTimeout(500); }
+    if (round < 6) await untilRound(page, round + 1);
   }
   await expect(page.getByRole('heading', { name: 'Mission complete!' })).toBeVisible();
   await page.waitForTimeout(6000);

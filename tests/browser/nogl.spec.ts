@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { boostFlow, boostPhase, correctSide, mash, nextButton, passAll, skipToRound, startGame, station, tapKey } from '../helpers';
+import { boostPhase, correctSide, mash, passAll, skipToRound, startGame, station, tapKey, untilRound } from '../helpers';
 
 test.use({ launchOptions: { args: ['--disable-gpu', '--disable-3d-apis', '--disable-webgl', '--disable-webgl2'] } });
 
@@ -32,16 +32,15 @@ test('without WebGL a Warp Drive boost still plays to MAX and arrives, with the 
   await page.getByRole('button', { name: 'Boost round!' }).click();
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Skip boost round' }).click();
-  await nextButton(page).click();
+  await untilRound(page, 2);
   await passAll(page, 2);
   await page.getByRole('button', { name: 'Boost round!' }).click();
   await expect.poll(() => boostPhase(page), { timeout: 10000 }).toBe('live');
   await mash(page, { mode: 'keys', pupils: [0, 1], ms: 10000, untilNotLive: true });
   await expect(page.locator('.sp-bbadge')).toHaveText('Mega boost!', { timeout: 10000 });
   await expect(page.locator('.sp-dest-name')).toHaveText('Candy Planet');
-  await expect.poll(() => boostFlow(page), { timeout: 10000 }).toBe('done');
+  await untilRound(page, 3, 12000);
   await expect(page.locator('.fx-canvas')).toHaveCount(0);
-  await expect(nextButton(page)).toBeVisible();
   expect(errors).toEqual([]);
 });
 
@@ -60,9 +59,8 @@ for (const theme of [{ name: 'Firework Frenzy', round: 1, card: '.sp-bgiant.is-f
     await expect(page.locator(theme.card)).toBeVisible({ timeout: 6000 });
     await expect(page.locator(theme.still).first()).toBeAttached({ timeout: 6000 });
     await expect(page.locator('.sp-bbadge')).toHaveText('Mega boost!', { timeout: 10000 });
-    await expect.poll(() => boostFlow(page), { timeout: 10000 }).toBe('done');
+    await untilRound(page, theme.round + 1, 12000);
     await expect(page.locator('.fx-canvas')).toHaveCount(0);
-    await expect(nextButton(page)).toBeVisible();
     expect(errors).toEqual([]);
   });
 }

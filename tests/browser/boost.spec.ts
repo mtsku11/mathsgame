@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import {
-  boostFlow, boostLog, boostPhase, boostState, countOf, mapAndCheck, mash, nextButton, passAll, pupilKeys, recordBoost, setButtons, setConnected, startBoostRound, startController, startGame, tapKey, type Logged,
+  boostFlow, boostLog, boostPhase, boostState, countOf, mapAndCheck, mash, nextButton, passAll, pupilKeys, recordBoost, setButtons, setConnected, startBoostRound, startController, startGame, tapKey, untilRound, type Logged,
 } from '../helpers';
 
 const errorsOf = (page: Page): string[] => {
@@ -10,7 +10,8 @@ const errorsOf = (page: Page): string[] => {
   return errors;
 };
 const names = (log: Logged[], ...wanted: string[]): string[] => log.filter(entry => wanted.includes(entry.name)).map(entry => entry.name === 'boostTier' || entry.name === 'boostFinale' || entry.name === 'boostEnd' ? `${entry.name}${entry.payload?.tier}` : entry.name);
-const untilDone = (page: Page, timeout = 20000): Promise<void> => expect.poll(() => boostFlow(page), { timeout }).toBe('done');
+// A finished boost is 'done' for about a second, then the next round starts by itself and the flow is idle again.
+const untilDone = (page: Page, timeout = 20000): Promise<void> => expect.poll(() => boostFlow(page), { timeout }).toMatch(/^(done|idle)$/);
 const easy = { autoStart: false, seconds: 20, difficulty: 'easy' } as const;
 
 test.describe.configure({ mode: 'parallel' });
@@ -33,7 +34,7 @@ test('four pupils on a shared XAC: tiers 1, 2 and 3 fire in order and MAX ends t
   await expect(page.locator('.sp-bbadge')).toHaveText('Mega boost!', { timeout: 15000 });
   await untilDone(page);
   expect(names(await boostLog(page), 'boostEnd')).toEqual(['boostEnd3']);
-  await expect(nextButton(page)).toBeVisible();
+  await untilRound(page, 2);
   await expect(page.locator('.sp-btop')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
@@ -61,8 +62,7 @@ test('a switch still held after the boost does not answer the next question unti
   await startBoostRound(page, 2);
   await mash(page, { mode: 'xac', pupils: [0, 1], ms: 15000, untilNotLive: true });
   await setButtons(page, [0]);
-  await untilDone(page);
-  await nextButton(page).click();
+  await untilRound(page, 2);
   await expect(page.locator('.sp-st .sp-pill:visible')).toHaveCount(0);
   await page.waitForTimeout(800);
   expect(await countOf(page, 'answerCorrect') + await countOf(page, 'answerTry')).toBe(0);
@@ -142,13 +142,36 @@ test('the teacher can skip the boost from the pause overlay, and the stations co
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Skip boost round' }).click();
   await expect(page.getByRole('dialog')).toBeHidden();
-  await expect(nextButton(page)).toBeVisible();
+  await expect(nextButton(page)).toBeHidden();
   await expect(page.locator('.sp-btop')).toHaveCount(0, { timeout: 4000 });
   expect(names(await boostLog(page), 'boostStart', 'boostGo', 'boostEnd')).toEqual(['boostStart', 'boostEnd1']);
-  expect(await page.locator('.sp-st').allTextContents()).toEqual(before);
+  await untilRound(page, 2);
+  await expect(page.locator('.sp-st')).toHaveCount(3);
+  expect(await page.locator('.sp-st').allTextContents()).not.toEqual(before);
   for (const card of await page.locator('.sp-st').all()) await expect(card).toHaveCSS('opacity', '1');
-  await nextButton(page).click();
-  await expect(page.locator('.sp-hub .sp-round')).toHaveText('Round 2 of 6');
+  expect(errors).toEqual([]);
+});
+
+test('after a boost the next round starts by itself with no Next button, and pausing in that second holds it', async ({ page }) => {
+  test.setTimeout(60000);
+  const errors = errorsOf(page);
+  await startGame(page, { count: 2, boost: { autoStart: false } });
+  await passAll(page, 2);
+  await page.getByRole('button', { name: 'Boost round!' }).click();
+  await expect.poll(() => boostPhase(page)).toBe('intro');
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Skip boost round' }).click();
+  expect(await boostFlow(page)).toBe('done');
+  await expect(nextButton(page)).toBeHidden();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.waitForTimeout(2500);
+  await expect(page.locator('.sp-hub .sp-round')).toHaveText('Round 1 of 6');
+  expect(await boostFlow(page)).toBe('done');
+  await page.getByRole('button', { name: 'Resume journey' }).click();
+  await untilRound(page, 2, 4000);
+  expect(await boostFlow(page)).toBe('idle');
+  await expect(nextButton(page)).toBeHidden();
   expect(errors).toEqual([]);
 });
 
@@ -166,7 +189,7 @@ test('N during the finale skips the rest of the boost and Enter is never a pupil
   await page.keyboard.press('KeyN');
   await untilDone(page, 4000);
   expect(names(await boostLog(page), 'boostEnd')).toEqual(['boostEnd3']);
-  await expect(nextButton(page)).toBeVisible();
+  await untilRound(page, 2);
 });
 
 test('a boost that runs out of time still ends happily at tier 1, then the round carries on', async ({ page }) => {
@@ -180,8 +203,7 @@ test('a boost that runs out of time still ends happily at tier 1, then the round
   await expect.poll(() => boostPhase(page), { timeout: 12000 }).toBe('finale');
   expect(names(await boostLog(page), 'boostTier', 'boostFinale')).toEqual(['boostFinale1']);
   await expect(page.locator('.sp-bbadge')).toHaveText('Boost!', { timeout: 8000 });
-  await untilDone(page, 10000);
-  await expect(nextButton(page)).toBeVisible();
+  await untilRound(page, 2, 12000);
   expect(errors).toEqual([]);
 });
 
@@ -254,9 +276,8 @@ test('after round 6 the boost leads straight to the mission-complete screen', as
     await page.waitForTimeout(500);
     await page.keyboard.press('Escape');
     await page.getByRole('button', { name: 'Skip boost round' }).click();
-    await nextButton(page).click();
+    await untilRound(page, round + 1);
   }
-  await expect(page.locator('.sp-hub .sp-round')).toHaveText('Round 6 of 6');
   await startBoostRound(page, 1);
   await mash(page, { mode: 'keys', pupils: [0], ms: 10000, untilNotLive: true });
   await expect(page.getByRole('heading', { name: 'Mission complete!' })).toBeVisible({ timeout: 15000 });
@@ -276,7 +297,7 @@ test('Warp Drive reaches the next planet after round 2 exactly once, however the
   await page.getByRole('button', { name: 'Boost round!' }).click();
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Skip boost round' }).click();
-  await nextButton(page).click();
+  await untilRound(page, 2);
   await passAll(page, 2);
   await page.getByRole('button', { name: 'Boost round!' }).click();
   await expect.poll(() => boostPhase(page), { timeout: 10000 }).toBe('live');
@@ -284,10 +305,7 @@ test('Warp Drive reaches the next planet after round 2 exactly once, however the
   await expect.poll(() => boostPhase(page), { timeout: 15000 }).toBe('finale');
   await expect.poll(() => countOf(page, 'destinationReached'), { timeout: 8000 }).toBe(1);
   await expect(page.locator('.sp-dest-name')).toHaveText('Candy Planet');
-  await untilDone(page, 8000);
-  await expect(page.locator('.sp-hub .sp-round')).toHaveText('Round 2 of 6');
-  await nextButton(page).click();
-  await expect(page.locator('.sp-hub .sp-round')).toHaveText('Round 3 of 6');
+  await untilRound(page, 3, 10000);
   await page.waitForTimeout(500);
   expect(await countOf(page, 'destinationReached')).toBe(1);
   expect(errors).toEqual([]);
@@ -302,7 +320,7 @@ test('reduced motion: presses, meter and tiers still work, the finale is a calm 
   await page.getByRole('button', { name: 'Boost round!' }).click();
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Skip boost round' }).click();
-  await nextButton(page).click();
+  await untilRound(page, 2);
   await passAll(page, 2);
   await page.getByRole('button', { name: 'Boost round!' }).click();
   await expect.poll(() => boostPhase(page), { timeout: 10000 }).toBe('live');
@@ -420,8 +438,7 @@ test('enlarged turns: the boost still has one saucer per pupil, and the single s
   await expect(page.locator('.sp-bsaucer')).toHaveCount(3);
   await expect.poll(() => boostPhase(page), { timeout: 10000 }).toBe('live');
   await mash(page, { mode: 'keys', pupils: [0, 1, 2], ms: 15000, untilNotLive: true });
-  await expect.poll(() => boostFlow(page), { timeout: 15000 }).toBe('done');
-  await expect(nextButton(page)).toHaveText(/Next round/);
+  await untilRound(page, 2, 15000);
   await expect(page.locator('.sp-st')).toHaveCount(1);
   await expect(page.locator('.sp-st').first()).toHaveCSS('opacity', '1');
   expect(errors).toEqual([]);
@@ -436,7 +453,7 @@ test('low stimulation: the Warp Drive finale is the calm fade, and the badge and
   await page.getByRole('button', { name: 'Boost round!' }).click();
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Skip boost round' }).click();
-  await nextButton(page).click();
+  await untilRound(page, 2);
   await passAll(page, 2);
   await page.evaluate(() => (window as unknown as { __nc: { motion: { setLowStim(value: boolean): void } } }).__nc.motion.setLowStim(true));
   await page.getByRole('button', { name: 'Boost round!' }).click();
@@ -481,20 +498,20 @@ test('two Warp Drive boosts in one mission set up and tear down cleanly, with no
   page.on('console', message => { if ((message.type() === 'error' || message.type() === 'warning') && !message.text().includes('GPU stall')) problems.push(`${message.type()}: ${message.text()}`); });
   await startGame(page, { count: 3, boost: { autoStart: false, seconds: 12, difficulty: 'easy' } });
   await expect(page.locator('.fx-canvas')).toHaveCount(1);
+  let round = 1;
   const skip = async (): Promise<void> => {
     await passAll(page, 3);
     await page.getByRole('button', { name: 'Boost round!' }).click();
     await page.keyboard.press('Escape');
     await page.getByRole('button', { name: 'Skip boost round' }).click();
-    await nextButton(page).click();
+    await untilRound(page, ++round);
   };
   const real = async (): Promise<void> => {
     await passAll(page, 3);
     await page.getByRole('button', { name: 'Boost round!' }).click();
     await expect.poll(() => boostPhase(page), { timeout: 10000 }).toBe('live');
     await mash(page, { mode: 'keys', pupils: [0, 1, 2], ms: 10000, untilNotLive: true });
-    await untilDone(page, 15000);
-    await nextButton(page).click();
+    await untilRound(page, ++round, 15000);
   };
   await skip();
   await real();

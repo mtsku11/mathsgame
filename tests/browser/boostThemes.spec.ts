@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { boostFlow, boostLog, boostPhase, boostState, mash, nextButton, passAll, recordBoost, skipToRound, startController, startGame, tapKey, type Logged } from '../helpers';
+import { boostFlow, boostLog, boostPhase, boostState, mash, passAll, recordBoost, skipToRound, startController, startGame, tapKey, untilRound, type Logged } from '../helpers';
 
 // Phase 3b: the Firework Frenzy (rounds 1 and 5) and Bubble Blast (round 3) boost themes, on the engine Phase 3a built.
 const errorsOf = (page: Page): string[] => {
@@ -11,7 +11,8 @@ const errorsOf = (page: Page): string[] => {
 const names = (log: Logged[], ...wanted: string[]): string[] => log.filter(entry => wanted.includes(entry.name)).map(entry => entry.name === 'boostTier' || entry.name === 'boostFinale' || entry.name === 'boostEnd' ? `${entry.name}${entry.payload?.tier}` : entry.name);
 const easy = { autoStart: false, seconds: 20, difficulty: 'easy' } as const;
 const spawned = (page: Page): Promise<number> => page.evaluate(() => (window as unknown as { __nc: { particles: { particleStats(): { spawned: number } } } }).__nc.particles.particleStats().spawned);
-const untilDone = (page: Page, timeout = 20000): Promise<void> => expect.poll(() => boostFlow(page), { timeout }).toBe('done');
+// A finished boost is 'done' for about a second, then the next round starts by itself and the flow is idle again.
+const untilDone = (page: Page, timeout = 20000): Promise<void> => expect.poll(() => boostFlow(page), { timeout }).toMatch(/^(done|idle)$/);
 const startRound = async (page: Page): Promise<void> => {
   await page.getByRole('button', { name: 'Boost round!' }).click();
   await expect.poll(() => boostPhase(page), { timeout: 10000 }).toBe('live');
@@ -37,7 +38,7 @@ test('rounds 1 to 6 play Firework Frenzy, Warp Drive, Bubble Blast, Warp Drive, 
     await page.keyboard.press('Escape');
     await page.getByRole('button', { name: 'Skip boost round' }).click();
     // After round 6 the boost leads straight to the mission-complete screen.
-    if (round < 6) { await nextButton(page).click(); await expect(page.locator('[data-boost-scene]')).toHaveCount(0, { timeout: 4000 }); }
+    if (round < 6) { await untilRound(page, round + 1); await expect(page.locator('[data-boost-scene]')).toHaveCount(0, { timeout: 4000 }); }
   }
   await expect(page.getByRole('heading', { name: 'Mission complete!' })).toBeVisible({ timeout: 10000 });
   expect(seen).toEqual(['fireworkFrenzy', 'warpDrive', 'bubbleBlast', 'warpDrive', 'fireworkFrenzy', 'warpDrive']);
@@ -93,7 +94,7 @@ for (const theme of themes) {
     await expect(page.locator('.sp-bbadge')).toHaveText('Mega boost!', { timeout: 15000 });
     await untilDone(page);
     expect(names(await boostLog(page), 'boostEnd')).toEqual(['boostEnd3']);
-    await expect(nextButton(page)).toBeVisible();
+    await untilRound(page, theme.round + 1);
     await expect(page.locator('.sp-btop, .sp-bworld, [data-boost-scene]')).toHaveCount(0);
     expect(errors).toEqual([]);
   });
@@ -112,8 +113,7 @@ for (const theme of themes) {
     expect(names(await boostLog(page), 'boostTier', 'boostFinale')).toEqual(['boostTier1', 'boostFinale1']);
     await expect(page.locator(theme.card)).toBeVisible();
     await expect(page.locator('.sp-bbadge')).toHaveText('Boost!', { timeout: 8000 });
-    await untilDone(page, 10000);
-    await expect(nextButton(page)).toBeVisible();
+    await untilRound(page, theme.round + 1, 12000);
     await expect(page.locator('.sp-btop, .sp-bworld, [data-boost-scene]')).toHaveCount(0);
     expect(errors).toEqual([]);
   });

@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
-import { answerCorrectly, boostFlow, boostPhase, mash, nextButton, openSetup, passAll, skipToRound, startBoostRound, startGame, station, tapKey, wrongSide } from '../helpers';
+import { answerCorrectly, boostFlow, boostPhase, mash, nextButton, openSetup, passAll, skipToRound, startBoostRound, startGame, station, tapKey, untilRound, wrongSide } from '../helpers';
 
 interface Entry { channel: 'music' | 'sfx' | 'voice'; action: string; id: string; time: number; volume: number; rate?: number }
 interface AudioState {
@@ -360,7 +360,7 @@ test('boost round audio: countdown beeps and GO, boost music with rising tier vo
   expect(plays(log, 'voice')).toEqual(expect.arrayContaining(['tier_boost', 'tier_super']));
   expect(log.some(entry => entry.channel === 'sfx' && entry.action === 'play' && (entry.id === 'fw_finale' || entry.id === 'warp_launch' || entry.id === 'pop'))).toBe(true);
 
-  await expect.poll(() => boostFlow(page), { timeout: 20000 }).toBe('done');
+  await expect.poll(() => boostFlow(page), { timeout: 20000 }).toMatch(/^(done|idle)$/);
   await expect.poll(async () => (await audioState(page)).music.id, { timeout: 4000 }).toBe('mission');
   log = await audioLog(page);
   const stop = log.findIndex(entry => entry.channel === 'music' && entry.action === 'stop' && entry.id === 'boost');
@@ -368,9 +368,8 @@ test('boost round audio: countdown beeps and GO, boost music with rising tier vo
   expect(stop).toBeGreaterThan(-1);
   expect(resume).toBeGreaterThan(stop);
   expect(await audioState(page)).toMatchObject({ boost: { music: 'off', tier: 0 } });
-  await clearLog(page);
-  await nextButton(page).click();
-  await expect.poll(async () => plays(await audioLog(page), 'voice')).toContain('round_2');
+  // The next round starts by itself after the boost, and its line never talks over the boost's last line.
+  await expect.poll(async () => plays(await audioLog(page), 'voice'), { timeout: 6000 }).toContain('round_2');
   expectNoVoiceOverlap(await audioLog(page));
   expect(errors).toEqual([]);
 });

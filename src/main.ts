@@ -128,7 +128,7 @@ function playState(): PlayState {
     rest: settings.enlarged ? Array.from({ length: settings.count }, (_, i) => i).filter(i => i !== current.active).map(player => ({ player, done: current.turns[player].outcome !== 'waiting' })) : [],
     round: current.round, completed: current.history.length, stars: current.stars, ready: ready(current),
     stations: shown.map(player => { const turn = current.turns[player]; return { player, question: turn.question, outcome: turn.outcome, attempts: turn.attempts, supported: turn.supported, picture: settings.players[player].quantities, paused, caps: settings.players[player].caps }; }),
-    next: !resolved || boostRun.flow === 'running' ? null : boostRun.flow === 'waiting' ? 'Boost round!' : settings.enlarged && current.active < settings.count - 1 ? 'Next player' : current.round === 6 ? 'Finish journey' : 'Next round',
+    next: !resolved || boostRun.flow === 'running' || boostRun.flow === 'done' ? null : boostRun.flow === 'waiting' ? 'Boost round!' : settings.enlarged && current.active < settings.count - 1 ? 'Next player' : current.round === 6 ? 'Finish journey' : 'Next round',
     destination: Math.max(destinationOf(current.round), boostRun.arrival ?? 0) as 0 | 1 | 2, perfect: current.turns.every(turn => turn.outcome === 'correct'),
     turn: settings.enlarged ? `Player ${current.active + 1} of ${settings.count}` : '',
     pause: { paused, reason: pauseReason, recovering, quiet: settings.quiet, volume: settings.effectsVolume, music: settings.musicVolume, voice: settings.voiceVolume, narration: settings.narration, boost: boostRun.flow === 'running' },
@@ -311,6 +311,8 @@ function loseController(): void {
     pause('The assigned controller disconnected. Reconnect it and check every switch before resuming.');
   } else enter('controls');
 }
+// A finished boost moves on to the next round by itself, once the stations have flown back from the saucer row (about 1 s), so the new round never deals in over that flight.
+const AFTER_BOOST_MS = 1200;
 function frame(now: number): void {
   const snapshot = readDevices(); devices = snapshot.devices; deviceError = snapshot.error;
   connectionHistory.sample(devices, now);
@@ -364,7 +366,8 @@ function frame(now: number): void {
   noteReady();
   boostRun.frame(states, now, dt, screen === 'play' && !paused && !document.hidden);
   const completed = !!session && !session.finished && ready(session) && boostRun.flow !== 'waiting' && boostRun.flow !== 'running';
-  if (transition.sample(now, settings.autoAdvance && completed, screen === 'play' && !paused && !document.hidden, settings.transitionSeconds * 1000)) perform('next');
+  const afterBoost = boostRun.flow === 'done';
+  if (transition.sample(now, (settings.autoAdvance || afterBoost) && completed, screen === 'play' && !paused && !document.hidden, afterBoost ? AFTER_BOOST_MS : settings.transitionSeconds * 1000)) perform('next');
   if (changed) { render(); if (announcements.length) announce(announcements.join(' ')); }
   requestAnimationFrame(frame);
 }

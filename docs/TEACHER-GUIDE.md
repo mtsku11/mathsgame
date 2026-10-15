@@ -109,7 +109,7 @@ Each pilot has a station with the question, their two answer buttons and three s
 | Speaker button (Say it) | Reads that pilot's question aloud again (needs Voice narration on and sound not muted). |
 | Help button | Shows a counting helper for that pilot. It never answers for them, and they still earn the star. |
 | Pass button | Lets that pilot travel with the crew without an answer. No star, and it never holds up the group. |
-| Next (hub button, **Enter** or **N**) | Appears when every pilot has finished the round. Its label is Next round, Next player (Spotlight turns), Finish journey (round 6) or Boost round!. |
+| Next (hub button, **Enter** or **N**) | Appears when every pilot has finished the round. Its label is Next round, Next player (Spotlight turns), Finish journey (round 6) or Boost round!. After a boost round the next round starts by itself, so no button is needed. |
 | Pause (round button top right, or **Esc**) | Freezes the game. Questions, stars and progress are kept. |
 
 Use **Tab** to reach the teacher buttons from the keyboard. Enter and N are ignored while a boost is counting down or live, so nobody skips a boost by accident. In keyboard mode, N is left to the pupils if one of them uses it as an answer key.
@@ -130,7 +130,7 @@ After a maths round is finished, a celebration plays and the boost begins (or wa
 - **No fail state**: if time runs out, the crew still gets a happy ending. Filling the meter sooner ends the live part sooner. Pressing before GO is ignored.
 - **Three scenes** rotate by round: Firework Frenzy (rounds 1 and 5), Warp Drive (rounds 2, 4 and 6; the mothership travels to the next planet) and Bubble Blast (round 3).
 - **Nobody is ranked**: each saucer glows with its pupil's recent effort, but no scores, names or "fastest" labels appear anywhere.
-- **Gentle on the next question**: after the boost, the next round only starts accepting answers once every switch has been released, so pressing never answers a question by accident.
+- **Straight on to the next round**: about a second after the boost ends, the next maths round starts by itself (after round 6 the crew flies home to the finale). It only starts accepting answers once every switch has been released, so pressing never answers a question by accident.
 
 **Teacher controls during a boost**
 
